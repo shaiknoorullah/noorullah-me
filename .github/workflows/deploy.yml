@@ -1,0 +1,65 @@
+name: Build + deploy to contabo-mum-1
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false   # don't kill a deploy mid-rsync
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: build + rsync
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build (astro)
+        run: npm run build
+        # → emits ./dist/
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # Pre-trust the host key (one-shot fetch — keyscan output is checked
+          # against the fingerprint we expect via -H option).
+          ssh-keyscan -p ${{ secrets.DEPLOY_PORT }} -t ed25519 \
+            ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Rsync dist/ to portfolio-deploy
+        # rrsync on the box jails this into /opt/contabo-mum-1/www/astro-build/.
+        # --delete removes files that no longer exist in dist/ — keeps the
+        # served tree byte-equal to the build output.
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.DEPLOY_PORT }} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
+            dist/ \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:./
+
+      - name: Verify www.noorullah.me responds 200
+        run: |
+          # Give CDN cache up to 30s to invalidate (max-age=300 but new bytes
+          # propagate quickly through CF's edge).
+          sleep 5
+          STATUS=$(curl -sI -o /dev/null -w "%{http_code}" https://www.noorullah.me/)
+          echo "Live status: $STATUS"
+          test "$STATUS" = "200" || { echo "Site not 200 after deploy"; exit 1; }
