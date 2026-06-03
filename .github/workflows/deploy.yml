@@ -36,24 +36,34 @@ jobs:
         # → emits ./dist/
 
       - name: Setup SSH key
+        # Pass secrets via env: (not direct ${{ }} interpolation in run:) so:
+        #   - the secret value never lands in the generated bash script source
+        #   - shell metachars (if any) can't break the script
+        #   - multi-line PEM payloads survive intact (printf > echo for keys)
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          # Pre-trust the host key (one-shot fetch — keyscan output is checked
-          # against the fingerprint we expect via -H option).
-          ssh-keyscan -p ${{ secrets.DEPLOY_PORT }} -t ed25519 \
-            ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -p "$DEPLOY_PORT" -t ed25519 "$DEPLOY_HOST" \
+            >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Rsync dist/ to portfolio-deploy
         # rrsync on the box jails this into /opt/contabo-mum-1/www/astro-build/.
         # --delete removes files that no longer exist in dist/ — keeps the
         # served tree byte-equal to the build output.
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
           rsync -avz --delete \
-            -e "ssh -i ~/.ssh/deploy_key -p ${{ secrets.DEPLOY_PORT }} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
+            -e "ssh -i ~/.ssh/deploy_key -p $DEPLOY_PORT -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
             dist/ \
-            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:./
+            "$DEPLOY_USER@$DEPLOY_HOST:./"
 
       - name: Verify www.noorullah.me responds 200
         run: |
