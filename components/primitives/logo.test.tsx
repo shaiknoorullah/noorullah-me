@@ -1,6 +1,6 @@
 // Unit test for <Logo>.
 //
-// Asserts each variant ("wordmark" | "monogram" | "favicon") renders an
+// Asserts each variant ('wordmark' | 'monogram' | 'favicon') renders an
 // <svg> root with the spec-frozen viewBox and the matching data attribute,
 // plus the right child geometry (path + dot rect for wordmark/monogram,
 // hand-built glyph for favicon).
@@ -12,7 +12,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
-import { Logo, type LogoVariant } from './Logo'
+import { Logo, type LogoVariant } from './logo'
 
 /** Spec-frozen viewBoxes from §3.5 — duplicated here so the test catches drift. */
 const EXPECTED_VIEWBOX: Record<LogoVariant, string> = {

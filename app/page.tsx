@@ -17,7 +17,7 @@
 //     and uses semantic `<footer role="contentinfo">` so axe `region` passes.
 
 import type { JSX } from 'react'
-import { Logo } from '../components/primitives/Logo'
+import { Logo } from '../components/primitives/logo'
 import { BIO_30W, STATUS_BUILDING, STATUS_LOCATION } from '../lib/bio'
 
 export default function HomePage(): JSX.Element {
@@ -85,7 +85,6 @@ export default function HomePage(): JSX.Element {
       </main>
 
       <footer
-        aria-label="Site status"
         style={{
           display: 'flex',
           justifyContent: 'space-between',

@@ -3,7 +3,11 @@
 // Tokens must load BEFORE any tailwind / component CSS so the cascade-layer
 // order is correct. Spec: projects/personal/noorullah-me/04-v1-implementation-spec.md
 // §3.4 (tokens), §3.1 (TS strict, no any), F5 (fonts), F12 (smoke route).
-import '../lib/tokens.css'
+//
+// The barrel `lib/styles/css/index.css` (ported from satus, F2) imports in this
+// order: tailwindcss → reset.css → easings.css → tokens.css → global.css.
+// This is the single import point for global stylesheet wiring.
+import '../lib/styles/css/index.css'
 
 import type { Metadata, Viewport } from 'next'
 import type { JSX, ReactNode } from 'react'
