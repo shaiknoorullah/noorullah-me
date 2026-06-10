@@ -17,7 +17,7 @@
 //     and uses semantic `<footer role="contentinfo">` so axe `region` passes.
 
 import type { JSX } from 'react'
-import { Logo } from '../components/primitives/logo'
+import { Logo } from '../components/primitives/Logo'
 import { BIO_30W, STATUS_BUILDING, STATUS_LOCATION } from '../lib/bio'
 
 export default function HomePage(): JSX.Element {

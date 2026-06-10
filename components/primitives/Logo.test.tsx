@@ -12,7 +12,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
-import { Logo, type LogoVariant } from './logo'
+import { Logo, type LogoVariant } from './Logo'
 
 /** Spec-frozen viewBoxes from §3.5 — duplicated here so the test catches drift. */
 const EXPECTED_VIEWBOX: Record<LogoVariant, string> = {
