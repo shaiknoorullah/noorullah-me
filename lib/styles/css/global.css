@@ -1,0 +1,146 @@
+/*
+ * Global stylesheet — base behaviours and reveal primitive.
+ *
+ * Ported from darkroom.engineering/satus (F2 strip-skeleton). Custom-media
+ * queries (--hover, --reduced-motion) were replaced with their standard
+ * equivalents since the postcss-preset-env / global-data pipeline is deferred
+ * (see postcss.config.mjs). When that pipeline lands, this file can be reverted
+ * to the original satus form.
+ *
+ * Colour references (var(--color-primary), var(--color-secondary),
+ * var(--color-contrast)) are resolved by the theme cascade — satus generates
+ * these via `lib/styles/scripts/`. Until the generator pipeline is wired,
+ * lib/tokens.css aliases them to the noorullah.me palette (spec §3.4).
+ */
+
+html {
+  --scrollbar-gutter: 0px;
+  scrollbar-gutter: stable;
+
+  &.lenis-stopped {
+    --scrollbar-gutter: var(--scrollbar-width);
+  }
+}
+
+* {
+  scrollbar-width: thin;
+}
+
+/*
+ * Derived semantic tokens — depth, hairlines, motion.
+ */
+:root {
+  --surface: color-mix(
+    in srgb,
+    var(--color-secondary) 4%,
+    var(--color-primary)
+  );
+  --surface-2: color-mix(
+    in srgb,
+    var(--color-secondary) 8%,
+    var(--color-primary)
+  );
+  --line-strong: color-mix(in srgb, var(--color-secondary) 28%, transparent);
+
+  --duration-fast: 200ms;
+  --duration: 400ms;
+  --duration-slow: 800ms;
+}
+
+html.overflow-hidden {
+  overflow: hidden;
+  touch-action: none;
+}
+
+body {
+  min-height: 100vh;
+  overscroll-behavior: none;
+  background-color: var(--color-primary);
+  color: var(--color-secondary);
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Selection styling */
+*::selection {
+  background-color: var(--color-contrast);
+  color: var(--color-primary);
+}
+
+/* SVG icon colors */
+svg.icon {
+  path[fill],
+  rect[fill],
+  circle[fill] {
+    fill: currentColor;
+  }
+  path[stroke],
+  rect[stroke],
+  circle[stroke] {
+    stroke: currentColor;
+  }
+}
+
+/* Hover states (standard media query — restored to (--hover) when preset-env lands) */
+.link {
+  @media (hover: hover) {
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+/* Focus states */
+*:focus-visible {
+  outline: 2px solid var(--color-contrast);
+  outline-offset: 2px;
+  border-radius: 1px;
+}
+
+html.scrollbar-grabbing,
+img {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+
+button {
+  cursor: pointer;
+  user-select: none;
+}
+
+/*
+ * Reveal-on-scroll primitive — paired with the `useReveal` hook.
+ */
+[data-reveal] [data-reveal-item] {
+  opacity: 0;
+  transform: var(--reveal-transform, translateY(16px));
+  transition:
+    opacity var(--reveal-duration, 700ms) var(--ease-out-expo),
+    transform var(--reveal-duration, 700ms) var(--ease-out-expo);
+  transition-delay: calc(var(--reveal-index, 0) * var(--reveal-stagger, 60ms));
+}
+
+[data-reveal="visible"] [data-reveal-item] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Respect reduced-motion (standard media query — restored to (--reduced-motion) when preset-env lands) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
+  }
+
+  [data-reveal] [data-reveal-item] {
+    transition-duration: 0.01ms;
+  }
+}
