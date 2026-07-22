@@ -1,0 +1,20 @@
+/*
+ * Barrel CSS file — imports the global stylesheet stack.
+ * Ported from darkroom.engineering/satus (F2 strip-skeleton).
+ *
+ * Order matters:
+ *   1. Tailwind utilities (v4 single-entry)
+ *   2. Reset (cross-browser normalize)
+ *   3. Easings (motion tokens)
+ *   4. noorullah.me design tokens (frozen, spec §3.4)
+ *   5. Global rules (lenis scroll gutter, themed surfaces)
+ *
+ * Satus's generated `tailwind.css` and `root.css` are deliberately omitted —
+ * we hand-author tokens in `lib/tokens.css` per spec §3.4. The generator pipeline
+ * can be wired back in via `lib/styles/scripts/` when we need full theme runtime.
+ */
+@import "tailwindcss";
+@import "./reset.css";
+@import "./easings.css";
+@import "../../tokens.css";
+@import "./global.css";

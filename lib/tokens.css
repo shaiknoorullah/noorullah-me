@@ -1,0 +1,90 @@
+/* ============================================================
+   noorullah.me — design tokens
+   Source of truth: projects/personal/noorullah-me/design-system.html
+   Spec ref: projects/personal/noorullah-me/04-v1-implementation-spec.md §3.4
+   ============================================================ */
+
+:root {
+  /* Color — ink + bone (FROZEN §4.1) */
+  --ink-0: #000000;
+  --ink-1: #0a0a0c;
+  --ink-2: #16161a;
+  --ink-3: #1e1e25;
+  --bone-0: #f2f2f5;
+  --bone-1: #a0a0a8;
+  --bone-2: #5c5c66;
+
+  /* Brutalist accent */
+  --cursor: #a4eb53;
+  --ember: #ff6b1a;
+  --ionic: #003fff;
+  --blood: #ff1f4d;
+  --lemon: #faff00;
+
+  /* Lines */
+  --line: rgba(160, 160, 168, 0.14);
+  --line-2: rgba(160, 160, 168, 0.28);
+
+  /* Live accent (theme switcher overrides these) */
+  --accent: var(--ember);
+  --accent-2: var(--cursor);
+
+  /* Satus-compat semantic aliases — keep lib/styles/css/global.css happy
+     until the satus theme generator pipeline (lib/styles/scripts/) is wired.
+     Spec §3.4: ink/bone are the v1 palette; --color-contrast doubles as accent. */
+  --color-primary: var(--ink-0);
+  --color-secondary: var(--bone-0);
+  --color-contrast: var(--ember);
+
+  /* Type — families
+     `--font-mono` / `--font-pixel` / `--font-serif` are injected on <html>
+     by next/font (see app/fonts.ts). They resolve to the size-adjusted
+     CSS-variable face exposed by next/font and fall back gracefully when
+     the variable is undefined (e.g. CSS rendered outside the React tree). */
+  --mono:
+    var(--font-mono, "Monaspace Argon"), ui-monospace, "SF Mono", Menlo,
+    monospace;
+  --pixel: var(--font-pixel, "Departure Mono"), "Monaspace Argon", monospace;
+  --serif: var(--font-serif, "Newsreader"), Georgia, serif;
+
+  /* Type — scale */
+  --t-xs: 11px;
+  --t-sm: 13px;
+  --t-body: clamp(15px, 0.92rem + 0.15vw, 17px);
+  --t-md: 19px;
+  --t-lg: 25px;
+  --t-xl: 34px;
+  --t-2xl: 45px;
+  --t-3xl: 60px;
+
+  /* Spacing — 4px base */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 96px;
+  --s-10: 128px;
+
+  /* Radii — brutalism: structural, not decorative */
+  --r-0: 0px;
+  --r-1: 2px;
+
+  /* Motion — durations (FROZEN §4.3) */
+  --dur-micro: 160ms;
+  --dur-cut: 1ms;
+  --dur-chor: 620ms;
+
+  /* Motion — easings */
+  --ease-camera: cubic-bezier(0.65, 0, 0.35, 1); /* power3.inOut */
+  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1); /* expo.out */
+  --ease-micro: cubic-bezier(0.34, 1.42, 0.5, 1); /* underdamped spring feel */
+}
+
+html {
+  color: var(--bone-0);
+  background: var(--ink-0);
+}

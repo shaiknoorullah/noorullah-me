@@ -2,38 +2,81 @@ name: Build + deploy to contabo-mum-1
 
 on:
   push:
-    branches: [main]
+    branches: [main, next-rewrite]
   workflow_dispatch:
 
+# Concurrency keyed by branch:
+#   - prevents two prod (or two preview) deploys from racing
+#   - lets prod + preview run in parallel (different rrsync jails)
+# cancel-in-progress=false → never kill a deploy mid-rsync.
 concurrency:
-  group: deploy-main
-  cancel-in-progress: false   # don't kill a deploy mid-rsync
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
   deploy:
-    name: build + rsync
+    name: build + lhci + rsync
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 15
+
+    env:
+      # Per spec §8: next-rewrite → preview jail (`/opt/contabo-mum-1/www/next-preview/`),
+      # main → prod jail (`/opt/contabo-mum-1/www/astro-build/`, unchanged from Astro era).
+      # Each rrsync user is jailed server-side, so the rsync target is always `./`.
+      IS_PROD: ${{ github.ref_name == 'main' }}
+      DEPLOY_TARGET: ${{ github.ref_name == 'main' && 'prod' || 'preview' }}
+      VERIFY_URL: ${{ github.ref_name == 'main' && 'https://www.noorullah.me/' || 'https://preview.noorullah.me/' }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Bun
+        # bun-only per project rule. No npm/yarn/pnpm anywhere in this job.
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
       - name: Setup Node 22
+        # Bun runs the build, but lhci's headless Chrome harness + some
+        # @lhci/cli binaries still expect a Node runtime on PATH.
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
 
       - name: Install deps
-        run: npm ci
+        # --frozen-lockfile = CI-safe install: fails if bun.lock would change.
+        # Mirrors `npm ci` semantics.
+        run: bun install --frozen-lockfile
 
-      - name: Build (astro)
-        run: npm run build
-        # → emits ./dist/
+      - name: Build (next export)
+        # Next.js with `output: 'export'` emits to ./out/ (per spec §8).
+        run: bun run build
+
+      - name: Run Lighthouse CI
+        # Hard gate: lhci runs BEFORE rsync. Any budget bust or perf regression
+        # exits non-zero, which aborts the job and blocks the deploy.
+        # Acceptance criterion: "lhci runs before rsync; failure blocks deploy".
+        run: bun run lhci
+
+      - name: Resolve deploy user (prod vs preview)
+        # Branch-aware secret selection happens in shell, not in `${{ }}` —
+        # GH Actions can't conditionally reference different secret names in
+        # `env:` mappings without `if:`-gating whole steps. Doing it here keeps
+        # the rsync step single-source.
+        env:
+          DEPLOY_USER_PROD: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_USER_PREVIEW: ${{ secrets.DEPLOY_USER_PREVIEW }}
+        run: |
+          if [ "$IS_PROD" = "true" ]; then
+            echo "DEPLOY_USER=$DEPLOY_USER_PROD" >> "$GITHUB_ENV"
+          else
+            echo "DEPLOY_USER=$DEPLOY_USER_PREVIEW" >> "$GITHUB_ENV"
+          fi
+          echo "Deploy target: $DEPLOY_TARGET"
 
       - name: Setup SSH key
         # Pass secrets via env: (not direct ${{ }} interpolation in run:) so:
@@ -51,25 +94,25 @@ jobs:
           ssh-keyscan -p "$DEPLOY_PORT" -t ed25519 "$DEPLOY_HOST" \
             >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Rsync dist/ to portfolio-deploy
-        # rrsync on the box jails this into /opt/contabo-mum-1/www/astro-build/.
-        # --delete removes files that no longer exist in dist/ — keeps the
-        # served tree byte-equal to the build output.
+      - name: Rsync out/ to portfolio-deploy
+        # Server-side rrsync jails this into the correct www subdir per user:
+        #   - prod user   → /opt/contabo-mum-1/www/astro-build/   (path unchanged)
+        #   - preview user → /opt/contabo-mum-1/www/next-preview/
+        # --delete keeps the served tree byte-equal to the build output.
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
           rsync -avz --delete \
             -e "ssh -i ~/.ssh/deploy_key -p $DEPLOY_PORT -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" \
-            dist/ \
+            out/ \
             "$DEPLOY_USER@$DEPLOY_HOST:./"
 
-      - name: Verify www.noorullah.me responds 200
+      - name: Verify deployed site responds 200
+        # Hits prod URL on main, preview URL on next-rewrite.
+        # Give Caddy + Cloudflare edge ~5s to pick up new bytes.
         run: |
-          # Give CDN cache up to 30s to invalidate (max-age=300 but new bytes
-          # propagate quickly through CF's edge).
           sleep 5
-          STATUS=$(curl -sI -o /dev/null -w "%{http_code}" https://www.noorullah.me/)
-          echo "Live status: $STATUS"
+          STATUS=$(curl -sI -o /dev/null -w "%{http_code}" "$VERIFY_URL")
+          echo "Live status ($DEPLOY_TARGET → $VERIFY_URL): $STATUS"
           test "$STATUS" = "200" || { echo "Site not 200 after deploy"; exit 1; }
