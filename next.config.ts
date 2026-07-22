@@ -15,6 +15,11 @@ import type { NextConfig } from 'next'
  * - bundle analyzer wrapping
  */
 const nextConfig: NextConfig = {
+  // Static export to ./out/. The deploy workflow already assumes this -- its
+  // build step is named "Build (next export)", its comment cites
+  // `output: 'export'`, and it rsyncs `out/`. Without this line `next build`
+  // emits .next/ instead and the rsync pushes a directory that never existed.
+  output: 'export',
   reactStrictMode: true,
   reactCompiler: true,
   poweredByHeader: false,

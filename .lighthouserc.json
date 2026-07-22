@@ -2,8 +2,8 @@
   "ci": {
     "collect": {
       "startServerCommand": "bun run preview",
-      "startServerReadyPattern": "ready|localhost|started",
-      "url": ["http://localhost:4321/"],
+      "startServerReadyPattern": "Accepting connections|localhost|ready",
+      "url": ["http://localhost:3000/"],
       "numberOfRuns": 3,
       "settings": {
         "preset": "desktop",
