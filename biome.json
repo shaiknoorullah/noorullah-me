@@ -12,6 +12,7 @@
     "includes": [
       "**",
       "!node_modules",
+      "!v2",
       "!**/.next",
       "!**/dist",
       "!**/out",

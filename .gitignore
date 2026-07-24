@@ -56,3 +56,8 @@ dist/
 # claude
 .claude
 plans
+
+# imported vault tooling
+v2/**/node_modules
+v2/**/dist
+v2/**/.venv*
