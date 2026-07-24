@@ -52,7 +52,7 @@ bpy.ops.export_scene.gltf(
 
 # meshopt (-cc) + KTX2 (-tc); -kn keeps node names (ihs, socket_anchor,
 # dieblock_* are the runtime contract). If the validator fails the 6MB
-# budget, add "-tq", "4". If the trace mask shows banding in review,
+# budget, add "-tq", "8". If the trace mask shows banding in review,
 # switch "-tc" to "-tu" (UASTC) and re-validate.
 # The npm wasm gltfpack ships WITHOUT BasisU — the native binary
 # (v2/tools/gltfpack/, meshoptimizer v0.25 release) is required for -tc.
@@ -63,7 +63,7 @@ if not os.path.exists(GLTFPACK):
         "meshoptimizer v0.25 release into v2/tools/gltfpack/"
     )
 subprocess.run(
-    [GLTFPACK, "-i", RAW, "-o", FINAL, "-cc", "-kn", "-tc", "-tq", "4", "-vp", "12", "-vt", "10", "-vn", "8"],
+    [GLTFPACK, "-i", RAW, "-o", FINAL, "-cc", "-kn", "-tc", "-tq", "8", "-vp", "12", "-vt", "10", "-vn", "8"],
     check=True,
 )
 

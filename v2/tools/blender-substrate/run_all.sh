@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The Substrate — deterministic asset pipeline. Rerunnable end to end.
-# Usage: SAMPLES=64 ./run_all.sh   (HERO=cardona for the fallback board)
+# Usage: ./run_all.sh   (HERO=cardona for fallback; SAMPLES can only RAISE floors)
 set -euo pipefail
 cd "$(dirname "$0")"
 

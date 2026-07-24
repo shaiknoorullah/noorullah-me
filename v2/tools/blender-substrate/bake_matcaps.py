@@ -17,7 +17,7 @@ DEST = os.path.join(REPO, "public", "assets", "matcaps")
 os.makedirs(DEST, exist_ok=True)
 
 SIZE = 512
-SAMPLES = int(os.environ.get("SAMPLES", "2048"))  # act-5 money shot (director floor)
+SAMPLES = max(int(os.environ.get("SAMPLES", "2048")), 2048)  # HARD floor (director)
 GREEN = (0.643, 0.922, 0.325)
 EMBER = (1.0, 0.42, 0.10)
 COOL = (0.21, 0.32, 0.91)

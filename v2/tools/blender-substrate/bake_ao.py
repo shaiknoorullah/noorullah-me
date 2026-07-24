@@ -90,7 +90,7 @@ def oidn_denoise_image(img, dest_path):
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(ROOT, "out")
-SAMPLES = int(os.environ.get("SAMPLES", "1024"))  # final floor (director override)
+SAMPLES = max(int(os.environ.get("SAMPLES", "1024")), 1024)  # HARD floor (director)
 # 1024 default (budget: 4x 2048 ETC1S AO maps alone cost ~4MB of the 6MB
 # GLB gate; AO is low-frequency)
 AO_SIZE = int(os.environ.get("AO_SIZE", "1024"))

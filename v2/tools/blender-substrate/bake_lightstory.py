@@ -85,8 +85,8 @@ def oidn_denoise_image(img, dest_path):
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(ROOT, "out")
-SAMPLES = int(os.environ.get("SAMPLES", "1024"))  # final floor (director override)
-DATA_SAMPLES = int(os.environ.get("DATA_SAMPLES", "512"))  # curvature/bentnorm floor
+SAMPLES = max(int(os.environ.get("SAMPLES", "1024")), 1024)  # HARD floor (director)
+DATA_SAMPLES = max(int(os.environ.get("DATA_SAMPLES", "512")), 512)  # HARD floor
 MAP_SIZE = int(os.environ.get("MAP_SIZE", "1024"))
 
 GREEN = (0.643, 0.922, 0.325)

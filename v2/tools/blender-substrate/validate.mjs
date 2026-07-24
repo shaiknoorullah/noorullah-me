@@ -39,10 +39,17 @@ for (const mesh of json.meshes ?? []) {
 }
 
 const nodeNames = new Set((json.nodes ?? []).map((n) => n.name ?? ''))
-const required = ['ihs', 'socket_anchor']
+const required = ['ihs', 'socket_anchor', 'socket_anchor_die', 'plinth', 'floor']
 const missing = required.filter((n) => !nodeNames.has(n))
 const dieBlocks = [...nodeNames].filter((n) => n.startsWith('dieblock_'))
 if (dieBlocks.length < 3) missing.push('dieblock_* (need >= 3)')
+
+/* the trace-mask courier (SPEC 5.1): a mt_solder_traced material MUST
+   carry an emissiveTexture — export.py works around the exporter dropping
+   it at strength 0, and this gate catches any regression of that hack */
+const courierOk = (json.materials ?? []).some(
+  (m) => (m.name ?? '').startsWith('mt_solder_traced') && m.emissiveTexture,
+)
 
 const exts = json.extensionsUsed ?? []
 const meshopt = exts.includes('EXT_meshopt_compression')
@@ -102,7 +109,8 @@ const report = {
     missing.length === 0 &&
     missingSidecars.length === 0 &&
     oversized.length === 0 &&
-    oversizedGlbImages.length === 0,
+    oversizedGlbImages.length === 0 &&
+    courierOk,
   bytes: buf.length,
   tris,
   meshopt,
@@ -113,6 +121,7 @@ const report = {
   missingSidecars,
   oversized,
   oversizedGlbImages,
+  courierOk,
 }
 
 process.stdout.write(`${JSON.stringify(report)}\n`)

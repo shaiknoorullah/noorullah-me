@@ -24,7 +24,7 @@ from mathutils import Vector
 ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(ROOT, "out")
 MASK_SIZE = 2048
-SAMPLES = int(os.environ.get("SAMPLES", "512"))  # director floor (EMIT: clean by construction)
+SAMPLES = max(int(os.environ.get("SAMPLES", "512")), 512)  # HARD floor (EMIT: clean by construction)
 
 sc = bpy.context.scene
 with open(os.path.join(OUT, "anchors.json")) as f:
