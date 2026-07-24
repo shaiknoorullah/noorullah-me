@@ -7,9 +7,12 @@
 //   §4   — a11y gate (axe-core 0 critical, 0 serious).
 //
 // Notes:
-//   - Hero (R3F) is gated on intersection per §3.2 stage 1 and is NOT placed
-//     here yet — Phase 2 H1–H7 will mount `<R3FCanvas>` + `<HeroScene>` over
-//     the wordmark placeholder rendered below.
+//   - `<StageLoader>` mounts the R3F canvas island (Phase 0 proof-of-pipeline:
+//     black background + wireframe cube) `position: fixed`, `zIndex: -1`,
+//     behind this div. The `<body>` (app/layout.tsx) already paints
+//     `var(--ink-0)`, so this div's own background is `transparent` — the
+//     canvas would otherwise be hidden behind it. Real scene composition
+//     lands in later Phase 0 tasks.
 //   - The wordmark svg is decorative (`aria-hidden`); the accessible name is
 //     supplied by a visually-hidden `<h1>` so the route still has a single
 //     top-level heading per WCAG / axe `heading-order`.
@@ -18,6 +21,7 @@
 
 import type { JSX } from 'react'
 import { Logo } from '../components/primitives/Logo'
+import { StageLoader } from '../components/scene/StageLoader'
 import { BIO_30W, STATUS_BUILDING, STATUS_LOCATION } from '../lib/bio'
 
 export default function HomePage(): JSX.Element {
@@ -31,9 +35,11 @@ export default function HomePage(): JSX.Element {
         gap: 'var(--s-7)',
         fontFamily: 'var(--mono)',
         color: 'var(--bone-0)',
-        background: 'var(--ink-0)',
+        background: 'transparent',
       }}
     >
+      <StageLoader />
+
       <main
         style={{
           flex: 1,
