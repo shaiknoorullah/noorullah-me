@@ -7,7 +7,7 @@
  * Run with: bun test lib/utils/rate-limit.test.ts
  */
 
-import { describe, expect, it } from 'bun:test'
+import { describe, expect, it } from 'vitest'
 import { getClientIP, rateLimit, rateLimiters } from './rate-limit'
 
 /**

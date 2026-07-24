@@ -4,7 +4,7 @@
  * Run with: bun test lib/utils/math.test.ts
  */
 
-import { describe, expect, it } from 'bun:test'
+import { describe, expect, it } from 'vitest'
 import {
   clamp,
   degToRad,
