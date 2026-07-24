@@ -1,0 +1,12 @@
+# Personality brief — Shaik Noorullah (mined from ~/powerhouse, user-authorized)
+
+## Judging lens: ideas score higher if they could ONLY be his site.
+
+- **Name/identity:** Noorullah = "Light of God". Arabic letter ن (nūn) — first letter of his name, opens Surah Al-Qalam ("The Pen") — "every commit/RFC is an act of writing". Was Hafiz-e-Quran.
+- **Faith as design system:** five prayers anchor the day; prayer-time palettes (Fajr steel-blue, Dhuhr white-yellow, Asr amber, Maghrib kanagawa indigo, Isha near-black); Sunday non-negotiable rest. Muslim identity is already public in his bio by his choice. Hyderabad (Charminar, Mecca Masjid jali screens) is identity.
+- **ADHD (public by his choice):** severe combined type; hyperfocus measured at 21h47m in one day; "the system is a prosthetic"; evening-shifted; "Leak vs Load" distinction; rituals as load-bearing structure.
+- **Story arcs:** BSc dropout (family finances) → solo-built principal-level multi-cloud infra ("the evidence is the credential"); team contracted 11→5, he absorbed the platform; one engineer + agent platform beats five.
+- **Aesthetic tastes:** terminal-native (vim/tmux/kitty/Hyprland, 34" ultrawide); gruvbox-dark, kanagawa-wave; Monaspace Argon; brutalism with a thesis ("shows the structural members, does not paint over the concrete; the cursor is the substrate, the GUI is the rental"); his chosen materials: refraction glass, brushed metal, honed black granite, patinated bronze jali, volumetric fog, dust motes in a light shaft; tungsten key; FOSS-only.
+- **Voice:** "Substrate over rent" / "Composed under load" / "Leverage, not heroics" / "Evidence over assertion". Specifics beat adjectives. No emoji, no exclamation marks, no marketing verbs. Dry forensic humor. Reveres: evidence, the git record, written dissents, the pen. Mocks: SaaS rent, AI-confident non-technical leadership, "passionate/driven" bios.
+- **Signature motifs available to scenes:** (1) prayer-cycle atmosphere (scene grade drifts through five daily palettes, geolocated, default Hyderabad); (2) jali gobo casting a shadow pattern that is literally hmac(name) — Islamic architecture + cryptographic signature as one light system; (3) the dot of nūn as the sole self-lit object; (4) exploded-monolith strata; (5) dust motes that brighten only inside the light shaft — hyperfocus as lighting logic.
+- **Privacy guardrails:** never surface: addictions, salary/conflict specifics, self-ratings, medication, family details. ADHD + Muslim identity are public by his choice.

@@ -1,0 +1,25 @@
+---
+title: "Contract gates: how one engineer merges like ten"
+description: "Fleet Commander's HMAC-signed merge gates — Pact, OpenAPI diffs, proto-breaking, merge trains — and why leverage needs guardrails."
+date: 2026-07-02
+tags: [llm-orchestration, ci-gates, fleet-commander]
+draft: false
+---
+
+Fleet Commander runs 35+ specialized agents against our ticket queue. Each task gets an isolated git worktree and a tmux session; an orchestrator routes work through a LiteLLM gateway to a bench of models under a hard $70/month LLM ceiling. On a good day the platform clears ten tickets in parallel. On a bad day, without the gates, it would break ten things in parallel. The gates are why there are no bad days in the merge log.
+
+The failure mode of multi-agent leverage is not that an agent writes bad code. It is that an agent writes plausible code that violates a contract it never saw — an API shape, a protobuf field, a database migration order — and the violation lands in a peer's worktree three merges later. One engineer reviewing one diff can catch that. One engineer reviewing ten parallel diffs cannot. So the review is not a person. It is eight scripts.
+
+## The eight gates
+
+Every merge into main passes the same battery, and every gate's verdict is HMAC-signed so a passing check cannot be forged by a process that never ran it. Pact consumer-contract verification. An OpenAPI diff that fails on any breaking change to a published route. A proto-breaking check for the gRPC surfaces. Schema-registry compatibility for the event schemas. A DB-migration impact check that flags destructive operations and out-of-order revisions. An atomic topological merge train that orders the queued PRs by dependency and merges them as one tested unit. A LIFO revert path so a bad train rolls back in the reverse order it boarded. And the signature verifier itself, which refuses unsigned or replayed verdicts.
+
+None of these are exotic. What makes them load-bearing is that they are mandatory for the human too. I merge through the same train the agents do. A gate that only constrains the agents is a suggestion; a gate that constrains everyone is infrastructure.
+
+## Why the leverage only works with guardrails
+
+The arithmetic of multi-agent work is simple: throughput scales with agents, blast radius scales with merges. Ten parallel worktrees produce ten times the diffs and, unguarded, ten times the contract violations — except the violations compound, because worktree eleven branched off a main that already absorbed three of them. The gates invert the economics. The marginal cost of the tenth agent is a few dollars of inference and one more train slot; the marginal risk is bounded by the same eight scripts that bound the first agent.
+
+The $70/month ceiling plays the same role on the spend side. A hard budget forces routing discipline — cheap models for mechanical tasks, expensive ones for judgment calls — the same way a hard gate forces contract discipline. Ceilings and gates are the same idea: leverage you cannot afford to run is not leverage, and leverage you cannot trust to merge is not either.
+
+The contract-gate scripts, the train, and the routing tables are all in the Fleet Commander RFCs. The pattern transfers to any team where agents touch a shared main: sign the verdicts, gate everyone equally, and make the revert as boring as the merge.

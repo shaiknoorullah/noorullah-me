@@ -1,0 +1,142 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  canonical?: string;
+  footer?: boolean;
+}
+
+const {
+  title = 'Shaik Noorullah — Platform Engineer',
+  description = 'Platform engineer. I build the substrate everyone else rents: multi-cloud Kubernetes platforms, HA Postgres, multi-agent engineering systems. Hyderabad, IN — remote.',
+  canonical = Astro.url.pathname,
+  footer = true,
+} = Astro.props;
+
+const site = Astro.site ?? new URL('https://www.noorullah.me');
+const canonicalUrl = new URL(canonical, site).href;
+const ogUrl = new URL('/og.svg', site).href;
+
+const personLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Shaik Noorullah',
+  jobTitle: 'Platform Engineer',
+  url: site.href,
+  email: 'hello@shaiknoorullah.email',
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Hyderabad',
+    addressCountry: 'IN',
+  },
+  sameAs: ['https://github.com/shaiknoorullah', 'https://www.linkedin.com/in/shaiknoorullah'],
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="noorullah" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogUrl} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(personLd)} />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">SKIP TO CONTENT</a>
+
+    <!-- loader: jali lattice assembles, percentage counts, curtains part -->
+    <div id="loader" aria-hidden="true">
+      <div class="curtain l"></div>
+      <div class="curtain r"></div>
+      <div class="loader-inner">
+        <div class="jali">
+          {Array.from({ length: 16 }, (_, i) => (
+            <span class={[0, 2, 5, 6, 9, 11, 12, 15].includes(i) ? 'on' : ''} />
+          ))}
+        </div>
+        <p class="meta" id="load-pct">000</p>
+      </div>
+    </div>
+    <script is:inline>
+      (function () {
+        var pct = document.getElementById('load-pct');
+        var loader = document.getElementById('loader');
+        if (!pct || !loader) return;
+        var p = 0;
+        var done = false;
+        var tick = function () {
+          if (done) return;
+          p = Math.min(96, p + 1 + Math.random() * 4);
+          pct.textContent = String(Math.floor(p)).padStart(3, '0');
+          if (!loader.classList.contains('done')) requestAnimationFrame(tick);
+          else pct.textContent = '100';
+        };
+        requestAnimationFrame(tick);
+        // R10 — one lattice cell flips every 8s, deterministic order (§2.1)
+        if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          var cells = document.querySelectorAll('#loader .jali span');
+          var flipOrder = [5, 12, 2, 15, 9, 0, 6, 11, 3, 14, 8, 13, 1, 4, 7, 10];
+          var flipIdx = 0;
+          setInterval(function () {
+            if (!cells.length) return;
+            cells[flipOrder[flipIdx % flipOrder.length]].classList.toggle('on');
+            flipIdx++;
+          }, 8000);
+        }
+        // hard fallback: never trap the page behind the loader
+        setTimeout(function () {
+          done = true;
+          loader.classList.add('done');
+        }, 5000);
+      })();
+    </script>
+
+    <header id="nav">
+      <a class="wordmark" href="/">noorullah</a>
+      <nav aria-label="Sections">
+        <a href="/#work">WORK</a>
+        <a href="/#about">ABOUT</a>
+        <a href="/#writing">WRITING</a>
+        <a href="/#contact">CONTACT</a>
+      </nav>
+    </header>
+
+    <div id="cursor-dot" aria-hidden="true"></div>
+    <div id="cursor-ring" aria-hidden="true"></div>
+
+    <main id="main">
+      <slot />
+    </main>
+
+    {footer && (
+      <footer class="hairline-t">
+        <div class="wrap flex flex-wrap items-center justify-between gap-6 py-10">
+          <p class="meta text-bone-1">© 2026 SHAIK NOORULLAH · HYDERABAD, IN</p>
+          <nav aria-label="Footer" class="meta flex gap-8">
+            <a class="text-bone-1 transition-colors hover:text-bone-0" href="/writing">WRITING</a>
+            <a class="text-bone-1 transition-colors hover:text-bone-0" href="https://github.com/shaiknoorullah" target="_blank" rel="noopener">GITHUB</a>
+            <a class="text-bone-1 transition-colors hover:text-bone-0" href="https://www.linkedin.com/in/shaiknoorullah" target="_blank" rel="noopener">LINKEDIN</a>
+            <a class="text-bone-1 transition-colors hover:text-bone-0" href="mailto:hello@shaiknoorullah.email">EMAIL</a>
+          </nav>
+        </div>
+      </footer>
+    )}
+  </body>
+</html>

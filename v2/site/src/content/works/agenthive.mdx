@@ -1,0 +1,17 @@
+---
+title: "AgentHive"
+description: "An encrypted peer-to-peer mesh for AI coding agents, written in Go."
+date: 2026-04-10
+tags: [go, p2p, crdt]
+draft: false
+order: 3
+role: "Design and implementation, solo"
+stack: [go, p2p, crdt]
+outcome: "Encrypted P2P mesh for AI coding agents, written in Go"
+---
+
+AgentHive is the control plane for agents that do not share a machine. It connects AI coding agents across devices over an encrypted peer-to-peer mesh — no central broker, no rented relay — so a session started on one box can be steered, observed, or handed off from another. Peers authenticate and encrypt end to end; the mesh discovers and routes without a server in the middle.
+
+Shared state lives in a CRDT store, which is the part that makes the mesh honest: concurrent edits from multiple devices merge deterministically instead of racing through a last-write-wins blob. An agent's task queue, its session registry, and its capability advertisements all converge under the same conflict-free semantics, so two operators steering the same fleet from two laptops see the same truth.
+
+Written in Go for the single-binary operational story — the whole node is one static executable, which keeps the deploy surface as small as the trust surface. Substrate over rent, applied to the agent layer itself.

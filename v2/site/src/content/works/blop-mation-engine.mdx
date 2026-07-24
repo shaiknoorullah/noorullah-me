@@ -1,0 +1,17 @@
+---
+title: "BLOP / mation-engine"
+description: "Terraform for business rules: a universal intermediate representation for conditional logic."
+date: 2026-03-15
+tags: [typescript, rules-engine]
+draft: false
+order: 4
+role: "Design and implementation, solo"
+stack: [typescript, rules-engine]
+outcome: "Terraform for business rules: a universal IR for conditional logic"
+---
+
+Business logic usually dies by a thousand rewrites: the same conditional rules expressed in a form library, a backend validator, a workflow engine, and a spreadsheet, each drifting from the others. BLOP treats business rules the way Terraform treats infrastructure — declared once in a universal intermediate representation, diffed, planned, and applied. mation-engine is the execution layer that runs the IR.
+
+The IR is the load-bearing idea. Conditional logic — eligibility, pricing, approval chains, escalation — compiles down to a single declarative graph with explicit dependencies between rules. Changing a rule produces a plan: what changes, what it touches, what breaks. That is the Terraform discipline applied to the layer where businesses actually keep their behavior.
+
+Written in TypeScript so the same engine runs in the browser form, the Node backend, and the edge worker — one IR, three runtimes, no drift. The schema layer, Table-Schema, gives the IR its typed contract so a rule that references a field that no longer exists fails at plan time, not in production.

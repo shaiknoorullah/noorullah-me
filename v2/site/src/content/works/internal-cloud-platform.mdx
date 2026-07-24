@@ -1,0 +1,17 @@
+---
+title: "Internal Cloud Platform"
+description: "A 99.999%-target multi-cloud Kubernetes PaaS, specified in 16 RFCs and built by one engineer."
+date: 2026-05-20
+tags: [kubernetes, gitops, ha-postgres]
+draft: false
+order: 1
+role: "Platform engineering, solo"
+stack: [kubernetes, gitops, ha-postgres]
+outcome: "ProficientNow · 16-RFC spec, zero-WAN consensus, 99.999% target"
+---
+
+The platform spans OVH, Contabo, an on-prem cluster, and an Azure witness, and it is specified before it is built: sixteen RFCs covering topology, networking, storage, CI, secrets, and failover, written under RFC 2119 discipline with a supersession table so every decision shows what it replaced. The topology is three-role — workload, storage, witness — and the rule that shapes everything else is zero WAN consensus: no quorum ever crosses providers, so a partitioned link degrades a site instead of freezing the platform.
+
+CI is a Tekton/Kaniko rewrite (`pn-infra` PR#93) that replaced CephFS build state with S3-backed ContainerSets, cutting the build system's dependency on the storage layer it was supposed to be testing. Data is HA Postgres with per-node PgBouncer; the provider move was a live WAL-G migration from OVH to Contabo with zero availability loss, rehearsed against a clone before it touched production (`ovh-infra` ba9120193).
+
+GitOps via ArgoCD and Helm keeps the declared state in git and the drift visible. The 99.999% figure is a target with an error budget, not a claim — the point of the RFCs is that every availability decision traces to a document someone can argue with.

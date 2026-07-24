@@ -1,0 +1,328 @@
+---
+import Base from '../layouts/Base.astro';
+import DeferredStage from '../components/scene/DeferredStage';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('posts'))
+  .filter((p) => !p.data.draft)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 3);
+
+const fmtDate = (d: Date) =>
+  d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+
+const works = [
+  {
+    ghost: '01',
+    title: 'Internal Cloud Platform',
+    outcome: 'ProficientNow · 16-RFC spec, zero-WAN consensus, 99.999% target',
+    tags: ['kubernetes', 'gitops', 'ha-postgres'],
+  },
+  {
+    ghost: '02',
+    title: 'Fleet Commander',
+    outcome: '35+ agents, HMAC-signed contract gates, $70/month LLM ceiling',
+    tags: ['llm-orchestration', 'ci-gates'],
+  },
+  {
+    ghost: '03',
+    title: 'AgentHive',
+    outcome: 'Encrypted P2P mesh for AI coding agents, written in Go',
+    tags: ['go', 'p2p', 'crdt'],
+  },
+  {
+    ghost: '04',
+    title: 'BLOP / mation-engine',
+    outcome: 'Terraform for business rules: a universal IR for conditional logic',
+    tags: ['typescript', 'rules-engine'],
+  },
+];
+
+const principles = [
+  { title: 'Substrate over rent', line: 'Own the layer below the one everyone stops at.' },
+  { title: 'Composed under load', line: 'The system absorbs entropy so the work doesn\u2019t.' },
+  { title: 'Leverage, not heroics', line: 'One engineer plus a multi-agent platform beats five without one.' },
+  { title: 'Evidence over assertion', line: 'The public record is the pitch.' },
+];
+
+const capabilities = [
+  'kubernetes platform engineering',
+  'gitops / argocd / helm',
+  'ha postgres / patroni / wal-g',
+  'multi-cloud networking / wireguard / cilium',
+  'observability / otel / prometheus',
+  'nestjs / typescript / go',
+  'terraform / ansible / proxmox',
+  'llm orchestration / agent platforms',
+  'incident response / forensic rcas',
+  'technical writing / rfcs',
+];
+---
+
+<Base footer={false}>
+  <!-- persistent WebGL stage: one canvas, six acts. DeferredStage mounts
+       the island on requestIdleCallback so LCP isn't blocked (R12). -->
+  <div id="stage-root" aria-hidden="true">
+    <DeferredStage client:only="react" />
+  </div>
+  <p class="sr-only">
+    Behind the text, a slow camera studies a dark studio still life: a glass
+    monolith, a chrome sphere, and a small glowing cube resting on a stone
+    plinth, lit by a single warm key light shining through a lattice.
+  </p>
+
+  <div class="relative z-[5]">
+    <!-- §1 HERO -->
+    <section id="hero" class="act relative flex min-h-svh flex-col justify-center">
+      <div class="wrap">
+        <div class="scrim">
+          <p class="meta mb-8 text-bone-1" data-reveal>
+            SHAIK NOORULLAH — PLATFORM ENGINEER · HYDERABAD, IN → REMOTE
+          </p>
+          <h1 class="d1 reveal-words">
+            <span class="block" data-reveal="words">I build the substrate</span>
+            <span class="block" data-reveal="words" data-delay="0.35">everyone else rents.</span>
+          </h1>
+        </div>
+        <div
+          class="meta scrim mt-[14vh] flex flex-wrap items-center gap-x-10 gap-y-4 text-bone-1"
+          data-reveal
+          data-delay="0.5"
+        >
+          <span>OPEN TO PRODUCT-BASED REMOTE TEAMS</span>
+          <a class="text-signal transition-colors hover:text-bone-0" href="mailto:hello@shaiknoorullah.email">
+            HELLO@SHAIKNOORULLAH.EMAIL
+          </a>
+          <span>EST. 28 MONTHS IN THE TRADE</span>
+        </div>
+      </div>
+      <p class="scroll-cue meta absolute bottom-8 left-1/2 -translate-x-1/2 text-bone-2" aria-hidden="true">
+        SCROLL
+        <span class="line"></span>
+      </p>
+    </section>
+
+    <!-- §2 STATEMENT — pinned. The pin's ScrollTrigger scrubs
+         statementState.progress (choreography.ts), which the in-canvas SDF
+         text (StatementText.tsx, §10.3) consumes per frame. This DOM
+         paragraph is the a11y/SEO/reduced-motion/no-WebGL source of the
+         copy — visually hidden, restored to flow under reduced motion.
+         Keep its text in lockstep with STATEMENT in StatementText.tsx. -->
+    <section id="statement" class="act relative flex min-h-svh items-center">
+      <div class="wrap">
+        <!-- placard pinned to the viewport top so the in-canvas SDF
+             statement (HUD-centered) never crosses it -->
+        <div class="sec-head absolute inset-x-[4vw] top-[10vh]" aria-hidden="true">
+          <span class="idx">01</span>
+          <span class="lbl">STATEMENT</span>
+          <span class="rule"></span>
+        </div>
+        <p
+          class="serif statement-fallback max-w-[30ch] text-[clamp(1.7rem,4.2vw,3.4rem)] leading-[1.28] tracking-[-0.01em] text-bone-0"
+        >
+          Twenty-eight months ago I joined as a backend engineer. The team contracted from eleven to five. I absorbed the platform — and shipped a 99.999%-target multi-cloud Kubernetes PaaS, a 16-RFC platform specification, and a multi-agent engineering platform that lets one engineer run ten tickets in parallel.
+        </p>
+      </div>
+    </section>
+
+    <!-- §3 SELECTED WORK — broken-grid index -->
+    <section id="work" class="act sec">
+      <div class="wrap">
+        <div class="sec-head">
+          <span class="idx">02</span>
+          <span class="lbl">SELECTED WORK</span>
+          <span class="rule"></span>
+        </div>
+        <div class="work-grid">
+          {works.map((w) => (
+            <article class="work-item" data-reveal>
+              <span class="ghost" aria-hidden="true">{w.ghost}</span>
+              {/* R2 — each card's text gets its own scrim against the set */}
+              <div class="scrim">
+                <h3 class="d3">
+                  <span class="work-title">{w.title}</span>
+                  <span class="work-arrow meta ml-4 align-middle" aria-hidden="true">→</span>
+                </h3>
+                <p class="mt-4 max-w-[46ch] text-bone-1">{w.outcome}</p>
+                <p class="meta mt-5 text-bone-2">{w.tags.join(' · ')}</p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- §4 EVIDENCE — full-bleed counter band -->
+    <section id="evidence" class="act sec hairline-t hairline-b">
+      <div class="wrap">
+        <div class="sec-head">
+          <span class="idx">03</span>
+          <span class="lbl">EVIDENCE</span>
+          <span class="rule"></span>
+        </div>
+        <div class="grid grid-cols-2 gap-x-6 gap-y-14 md:grid-cols-3">
+          <div class="stat" data-reveal>
+            <p class="d2 num" data-count="3204" data-format="comma">3,204</p>
+            <p class="meta mt-4 text-bone-1">COMMITS</p>
+          </div>
+          <div class="stat" data-reveal>
+            <p class="d2 num" data-count="562">562</p>
+            <p class="meta mt-4 text-bone-1">PRS</p>
+          </div>
+          <div class="stat" data-reveal>
+            <p class="d2 num" data-count="49">49</p>
+            <p class="meta mt-4 text-bone-1">RFCS</p>
+          </div>
+          <div class="stat" data-reveal>
+            <p class="d2 num" data-count="594" data-prefix="~" data-suffix="k">~594k</p>
+            <p class="meta mt-4 text-bone-1">LINES SHIPPED</p>
+          </div>
+          <div class="stat" data-reveal>
+            <p class="d2 num" data-count="99.999" data-decimals="3" data-suffix="%">99.999%</p>
+            <p class="meta mt-4 text-bone-1">AVAILABILITY TARGET</p>
+          </div>
+          <div class="stat" data-reveal>
+            <p class="d2 num" data-count="5" data-from="11" data-arrow="11">11→5</p>
+            <p class="meta mt-4 text-bone-1">TEAM ABSORBED</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- §5 ABOUT -->
+    <section id="about" class="act sec">
+      <div class="wrap">
+        <div class="sec-head">
+          <span class="idx">04</span>
+          <span class="lbl">ABOUT</span>
+          <span class="rule"></span>
+        </div>
+        <div class="grid gap-14 md:grid-cols-12">
+          <div class="md:col-span-4" data-reveal>
+            <dl class="meta space-y-6 text-bone-1">
+              <div class="hairline-t pt-5">
+                <dt class="text-bone-2">NAME</dt>
+                <dd class="mt-2 text-bone-0">SHAIK NOORULLAH</dd>
+              </div>
+              <div class="hairline-t pt-5">
+                <dt class="text-bone-2">BASE</dt>
+                <dd class="mt-2 text-bone-0">HYDERABAD, IN → REMOTE</dd>
+              </div>
+              <div class="hairline-t pt-5">
+                <dt class="text-bone-2">PRACTICE</dt>
+                <dd class="mt-2 text-bone-0">FIVE PRAYERS DAILY · SUNDAY OFF</dd>
+              </div>
+            </dl>
+          </div>
+          <div class="md:col-span-8">
+            <p class="serif max-w-[62ch] text-[clamp(1.1rem,1rem+0.5vw,1.4rem)] leading-[1.65]" data-reveal>
+              I&rsquo;m Shaik — a platform engineer who learned the trade by shipping the things I needed and reading the source of every dependency I couldn&rsquo;t justify. When the team contracted from eleven to five, I absorbed the platform — and the work that came out of it is concrete: a 16-RFC internal-cloud spec, a Tekton/Kaniko CI rewrite, HA Postgres with a live cross-provider migration, and a multi-agent platform with HMAC-signed merge gates. I work from the substrate up: FOSS, self-hosted, owned — recoverable from first principles because it was built from them. I read three RFCs before I write one, and I write incidents as RCAs, not postmortems nobody reads.
+            </p>
+            <ul class="meta mt-14 grid list-none gap-x-10 sm:grid-cols-2" data-reveal>
+              {capabilities.map((c) => (
+                <li class="hairline-t py-3.5 text-bone-1">{c}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- §6 PRINCIPLES — the horizontal accent -->
+    <section id="principles" class="act relative overflow-hidden">
+      <div class="principles-track" data-track>
+        {principles.map((p, i) => (
+          <div class="principle-panel min-h-svh">
+            <div class="scrim">
+              <p class="meta mb-8 text-bone-2">05.{i + 1} — PRINCIPLE</p>
+              <h3 class="d2 mb-8 max-w-[14ch]">{p.title}</h3>
+              <p class="serif max-w-[36ch] text-[clamp(1.05rem,1rem+0.5vw,1.35rem)] leading-[1.6] text-bone-1">
+                {p.line}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- §7 WRITING -->
+    <section id="writing" class="act sec">
+      <div class="wrap">
+        <div class="sec-head">
+          <span class="idx">06</span>
+          <span class="lbl">WRITING</span>
+          <span class="rule"></span>
+        </div>
+        <div>
+          {posts.map((post) => (
+            <a class="writing-row hairline-t py-9" href={`/writing/${post.id}/`} data-reveal>
+              <div class="flex flex-wrap items-baseline justify-between gap-x-10 gap-y-2">
+                <div class="min-w-0">
+                  <p class="meta mb-3 text-bone-2">{fmtDate(post.data.date)}</p>
+                  <h3 class="d3 row-title">{post.data.title}</h3>
+                  <p class="mt-3 max-w-[56ch] text-bone-1">{post.data.description}</p>
+                </div>
+                <span class="meta read-cue shrink-0 text-signal">READ →</span>
+              </div>
+            </a>
+          ))}
+          <div class="hairline-t pt-9">
+            <a class="meta text-bone-1 transition-colors hover:text-signal" href="/writing" data-reveal>
+              ALL WRITING →
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- §8 CONTACT — the conversion surface -->
+    <section id="contact" class="act sec flex min-h-svh flex-col justify-center">
+      <div class="wrap">
+        <div class="sec-head">
+          <span class="idx">07</span>
+          <span class="lbl">CONTACT</span>
+          <span class="rule"></span>
+        </div>
+        <div class="scrim">
+          <h2 class="d1 reveal-words">
+            <span class="block" data-reveal="words">Build the substrate</span>
+            <span class="block" data-reveal="words" data-delay="0.25">with me.</span>
+          </h2>
+        </div>
+        <p class="serif mt-12 max-w-[44ch] text-[clamp(1.1rem,1rem+0.6vw,1.5rem)] leading-[1.6] text-bone-1" data-reveal>
+          I&rsquo;m looking for a remote, product-based team where engineering quality is a stated and defended value.
+        </p>
+        <div class="mt-14" data-reveal>
+          <a class="btn-mail" href="mailto:hello@shaiknoorullah.email" data-magnetic>
+            HELLO@SHAIKNOORULLAH.EMAIL
+          </a>
+        </div>
+        <div class="meta mt-16 flex flex-wrap gap-x-10 gap-y-4" data-reveal>
+          <a class="text-bone-1 transition-colors hover:text-bone-0" href="https://github.com/shaiknoorullah" target="_blank" rel="noopener">GITHUB</a>
+          <a class="text-bone-1 transition-colors hover:text-bone-0" href="https://www.linkedin.com/in/shaiknoorullah" target="_blank" rel="noopener">LINKEDIN</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- footer: brand marquee + legal -->
+    <footer class="hairline-t relative z-[5]">
+      <div class="marquee py-10" aria-hidden="true">
+        <div class="marquee-track meta text-bone-2">
+          {Array.from({ length: 2 }, () => (
+            <span>
+              SUBSTRATE OVER RENT — COMPOSED UNDER LOAD —&nbsp;SUBSTRATE OVER RENT — COMPOSED UNDER LOAD —&nbsp;SUBSTRATE OVER RENT — COMPOSED UNDER LOAD —&nbsp;SUBSTRATE OVER RENT — COMPOSED UNDER LOAD —&nbsp;
+            </span>
+          ))}
+        </div>
+      </div>
+      <div class="hairline-t">
+        <div class="wrap flex flex-wrap items-center justify-between gap-x-10 gap-y-4 py-8">
+          <p class="meta text-bone-2">© 2026 SHAIK NOORULLAH · HYDERABAD, IN · BUILT WITH ASTRO + THREE.JS</p>
+          <a class="meta text-bone-1 transition-colors hover:text-signal" href="mailto:hello@shaiknoorullah.email">
+            HELLO@SHAIKNOORULLAH.EMAIL
+          </a>
+        </div>
+      </div>
+    </footer>
+  </div>
+</Base>

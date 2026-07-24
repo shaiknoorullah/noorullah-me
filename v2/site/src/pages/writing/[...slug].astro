@@ -1,0 +1,67 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = (await getCollection('posts'))
+    .filter((p) => !p.data.draft)
+    .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+  return posts.map((post, i) => ({
+    params: { slug: post.id },
+    props: { post, newer: posts[i - 1] ?? null, older: posts[i + 1] ?? null },
+  }));
+}
+
+interface Props {
+  post: CollectionEntry<'posts'>;
+  newer: CollectionEntry<'posts'> | null;
+  older: CollectionEntry<'posts'> | null;
+}
+
+const { post, newer, older } = Astro.props;
+const { Content } = await render(post);
+
+const fmtDate = (d: Date) =>
+  d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+const words = (post.body ?? '').split(/\s+/).filter(Boolean).length;
+const minutes = Math.max(1, Math.round(words / 200));
+---
+
+<Base title={`${post.data.title} — Shaik Noorullah`} description={post.data.description} canonical={`/writing/${post.id}`}>
+  <article class="sec">
+    <div class="wrap">
+      <header class="mb-16">
+        <p class="meta mb-8 flex flex-wrap gap-x-8 gap-y-2 text-bone-1">
+          <span>{fmtDate(post.data.date)}</span>
+          {post.data.tags.length > 0 && <span class="text-bone-2">{post.data.tags.join(' · ').toUpperCase()}</span>}
+          <span class="text-bone-2">{minutes} MIN READ</span>
+        </p>
+        <h1 class="d2 max-w-[16ch]">{post.data.title}</h1>
+        <p class="serif mt-8 max-w-[52ch] text-[clamp(1.05rem,1rem+0.4vw,1.3rem)] italic leading-[1.6] text-bone-1">
+          {post.data.description}
+        </p>
+      </header>
+
+      <div class="article-body hairline-t pt-14">
+        <Content />
+      </div>
+
+      <nav class="meta hairline-t mt-20 flex flex-wrap items-center justify-between gap-x-10 gap-y-4 pt-8" aria-label="More writing">
+        <a class="text-bone-1 transition-colors hover:text-bone-0" href="/writing">← ALL WRITING</a>
+        <div class="flex flex-wrap gap-x-10 gap-y-4">
+          {newer && (
+            <a class="text-bone-1 transition-colors hover:text-bone-0" href={`/writing/${newer.id}/`}>
+              ← {newer.data.title.toUpperCase()}
+            </a>
+          )}
+          {older && (
+            <a class="text-bone-1 transition-colors hover:text-bone-0" href={`/writing/${older.id}/`}>
+              {older.data.title.toUpperCase()} →
+            </a>
+          )}
+        </div>
+      </nav>
+    </div>
+  </article>
+</Base>

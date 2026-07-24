@@ -1,0 +1,17 @@
+---
+title: "Fleet Commander"
+description: "A multi-agent engineering platform that lets one engineer run ten tickets in parallel without breaking peers."
+date: 2026-06-28
+tags: [llm-orchestration, ci-gates]
+draft: false
+order: 2
+role: "Design and implementation, solo"
+stack: [llm-orchestration, ci-gates]
+outcome: "35+ agents, HMAC-signed contract gates, $70/month LLM ceiling"
+---
+
+When the team contracted from eleven engineers to five, the missing hands became a build problem. Fleet Commander is the answer: 35+ specialized agents across six capability tiers, routed through a LiteLLM gateway to a bench of models under a hard $70/month LLM ceiling. Linear is the ticket source, audit trail, and visibility layer; every task runs in an isolated git worktree backed by a tmux session, so parallel work never shares state it did not declare.
+
+The leverage survives contact with reality because of the guardrails: eight HMAC-signed contract-gate scripts — Pact verification, OpenAPI breaking-change diffs, proto-breaking checks, schema-registry compatibility, DB-migration impact, an atomic topological merge train, LIFO revert, and the signature verifier — gate every merge, human or agent. A passing check cannot be forged by a process that never ran it, and the human merges through the same train as the agents.
+
+The result is one engineer clearing ten tickets in parallel with a merge log that stays boring. The full breakdown is in the writing: Contract gates: how one engineer merges like ten.

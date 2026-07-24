@@ -1,0 +1,15 @@
+# 350MB portable Blender runtime — re-downloadable, never commit
+blender-4.2.3-linux-x64/
+
+# Heavy binary artifacts — present on disk, deliberately not versioned.
+# ~3GB across these four; they bloat clones and two of them mirror
+# third-party sites, which must not be republished from this repo.
+#
+# concepts/ + storyboards/  — our own Blender/concept renders, regenerable
+#                             from build_strata.py + build_textures.py
+# reference-capture/        — scraped frames/shaders from reference studio sites
+# aten7-capture/            — scraped frames/shaders from aten7's site
+concepts/
+storyboards/
+reference-capture/
+aten7-capture/

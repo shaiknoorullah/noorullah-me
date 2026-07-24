@@ -1,0 +1,27 @@
+---
+title: "911 lines, deleted"
+description: "PR #21: replacing a SaaS observability vendor with a self-hosted OpenTelemetry collector — and what substrate engineering actually costs."
+date: 2026-06-14
+tags: [opentelemetry, observability, substrate]
+draft: false
+---
+
+PR #21 on the ATS monorepo is the largest negative diff I have shipped: 911 lines of `@hyperdx/node-opentelemetry` removed in one pass. The instrumentation wrapper, the vendor-specific exporter config, the environment gymnastics that kept the SDK pointed at someone else's backend — gone. In its place, a self-hosted OpenTelemetry collector running next to the workload, speaking plain OTLP, writing to storage we own. The SaaS bill retired with the merge.
+
+The vendor SDK was not bad software. That is not why it had to go. It had to go because it was a rented layer sitting underneath everything else we did — every trace, every log line, every debugging session flowed through a dependency whose pricing, retention, and roadmap we did not control. When the vendor's ingestion bill started scaling with traffic instead of value, the rent became visible. Rent you can see is already overdue.
+
+## What the replacement actually took
+
+The honest version is not "one PR." The PR is the last ten percent. Before the deletion, the collector had to exist: an OTel collector deployment with receivers for OTLP gRPC and HTTP, processors for batching and attribute redaction, exporters to the self-hosted Tempo and Loki stack. The application's instrumentation moved from the vendor wrapper to the upstream `@opentelemetry/sdk-node` — the same spans, the same semantic conventions, no proprietary envelope. Staging ran both paths in parallel for nine days while I compared trace continuity across deploys. Only then did the 911 lines come out.
+
+The diff itself was mechanical. Delete the wrapper package. Delete its init module. Point the OTLP endpoint at the in-cluster collector. Drop three environment variables from every deployment manifest. The tests that referenced the vendor's test utilities were the only fiddly part — they moved to the upstream SDK's in-memory exporter.
+
+## What substrate over rent means here
+
+Substrate over rent is not ideology, and it is not "self-host everything." It is a default direction for the layer below the one everyone stops at. Observability is substrate: when production is on fire, you do not want your visibility into the fire metered by a third party, rate-limited by a plan tier, or subject to a status page that is not yours. The collector is boring, versioned, recoverable from its own config. If it dies, I can rebuild it from the manifest in an afternoon. That property — recoverable from first principles — is what the rent never buys.
+
+The counter-argument is maintenance burden, and it is correct as far as it goes. The collector is ours to patch, ours to upgrade, ours to page on. That is the cost. The bill it retired recurred monthly; the maintenance is front-loaded and shrinks as the config stabilizes. Nine months in, the collector has needed two upgrades and zero incidents.
+
+## The record
+
+The deletion is `pnow-ats-v2` PR #21. The collector config and the migration notes are in the infra RFC series — RFC 014 covers the redaction processors, because the part of observability nobody demos is keeping secrets out of your spans. If your platform work sends its telemetry through a vendor SDK, the question is not whether the vendor is good. It is whether you could delete 911 lines and keep watching production. We could. So we did.

@@ -1,0 +1,30 @@
+18:11:34 | INFO: Data are loaded, start creating Blender stuff
+18:11:34 | INFO: Blender create Mesh node Cube.001
+18:11:34 | INFO: Blender create Mesh node Cube.002
+18:11:34 | INFO: Blender create Mesh node Sphere.001
+18:11:35 | INFO: Blender create Mesh node Cube.003
+18:11:35 | INFO: Blender create Mesh node Cube.004
+18:11:35 | INFO: Blender create Mesh node Cube.005
+18:11:35 | INFO: Blender create Mesh node Cube.006
+18:11:35 | INFO: Blender create Mesh node Cube.007
+18:11:35 | INFO: Blender create Mesh node Cube.008
+18:11:35 | INFO: Blender create Mesh node Cube.009
+18:11:35 | INFO: Blender create Mesh node Cube.010
+18:11:35 | INFO: glTF import finished in 0.03s
+imported: ['chrome_sphere', 'counter_bar', 'cursor_cube', 'floor', 'jali_screen', 'plinth', 'strata_0', 'strata_1', 'strata_2', 'strata_3', 'strata_4']
+unwrapped floor
+unwrapped plinth
+unwrapped chrome_sphere
+unwrapped counter_bar
+unwrapped jali_screen
+unwrapped strata_0
+bake cached, skipping: ao_floor
+bake cached, skipping: ao_plinth
+bake cached, skipping: ao_chrome_sphere
+bake cached, skipping: ao_counter_bar
+bake cached, skipping: ao_jali_screen
+bake cached, skipping: ao_strata_0
+bake cached, skipping: curv_plinth
+bake cached, skipping: curv_counter_bar
+bake cached, skipping: curv_jali_screen
+bake cached, skipping: curv_strata_0

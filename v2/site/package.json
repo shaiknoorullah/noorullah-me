@@ -1,0 +1,44 @@
+{
+  "name": "noorullah-me-site",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "cms": "KEYSTATIC=1 astro dev"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^4.3.14",
+    "@astrojs/react": "^4.2.0",
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.3.0",
+    "@fontsource-variable/newsreader": "^5.2.5",
+    "@fontsource-variable/space-grotesk": "^5.2.5",
+    "@fontsource/ibm-plex-mono": "^5.2.5",
+    "@keystatic/astro": "^5.2.0",
+    "@keystatic/core": "^0.5.51",
+    "@react-three/drei": "^10.0.6",
+    "@react-three/fiber": "^9.1.2",
+    "@react-three/postprocessing": "^3.0.4",
+    "astro": "^5.7.0",
+    "gsap": "^3.13.0",
+    "lenis": "^1.2.3",
+    "postprocessing": "^6.37.1",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "three": "^0.175.0",
+    "troika-three-text": "^0.52.4",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.4",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@types/three": "^0.175.0",
+    "playwright-core": "^1.61.1",
+    "tailwindcss": "^4.1.4",
+    "typescript": "^5.8.3"
+  }
+}
