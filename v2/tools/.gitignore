@@ -13,3 +13,6 @@ concepts/
 storyboards/
 reference-capture/
 aten7-capture/
+
+# gltfpack native binary (meshoptimizer v0.25, BasisU built in) — re-downloadable
+gltfpack/
