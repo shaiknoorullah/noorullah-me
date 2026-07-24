@@ -47,18 +47,62 @@ if (dieBlocks.length < 3) missing.push('dieblock_* (need >= 3)')
 const exts = json.extensionsUsed ?? []
 const meshopt = exts.includes('EXT_meshopt_compression')
 const ktx2 = exts.includes('KHR_texture_basisu')
+
+/* in-GLB KTX2 dims must be <= 2048 (SPEC §7) — parse each KTX2 header
+   (pixelWidth/Height at byte 20/24 past the bufferView start). Added after
+   an 8K source texture shipped verbatim past the sidecar-only check. */
+const binStart = 20 + jsonLen + 8
+const oversizedGlbImages = (json.images ?? [])
+  .filter((img) => img.bufferView !== undefined)
+  .filter((img) => {
+    const bv = json.bufferViews[img.bufferView]
+    const o = binStart + (bv.byteOffset ?? 0)
+    return buf.readUInt32LE(o + 20) > 2048 || buf.readUInt32LE(o + 24) > 2048
+  })
+  .map((img) => img.name ?? 'unnamed')
 const nonKtx2Images = (json.images ?? [])
   .filter((img) => img.mimeType !== 'image/ktx2')
   .map((img) => img.name ?? img.mimeType ?? 'unnamed')
 
+/* director addendum 2026-07-24: light-story bakes + matcap trio + spill.
+   Sidecars ship next to the GLB (no glTF slot for lightmaps); PNG this
+   phase (no basisu binary for standalone KTX2 — see run_all.sh note). */
+import { dirname, join } from 'node:path'
+const assetsDir = dirname(path)
+const sidecars = [
+  'tracemap-src.png',
+  'lightstory/lightmap_solder.png',
+  'lightstory/lightmap_component.png',
+  'lightstory/lightmap_darkmetal.png',
+  'lightstory/lightmap_granite.png',
+  'lightstory/curvature_component.png',
+  'lightstory/curvature_darkmetal.png',
+  'lightstory/bentnorm_solder.png',
+  'lightstory/bentnorm_component.png',
+  'matcaps/matcap-die-base.png',
+  'matcaps/matcap-die-ao.png',
+  'matcaps/matcap-die-spec.png',
+]
+const missingSidecars = sidecars.filter((f) => !existsSync(join(assetsDir, f)))
+/* PNG dims from IHDR (bytes 16-23) — every sidecar must be <= 2048 */
+const oversized = sidecars
+  .filter((f) => existsSync(join(assetsDir, f)))
+  .filter((f) => {
+    const b = readFileSync(join(assetsDir, f))
+    return b.readUInt32BE(16) > 2048 || b.readUInt32BE(20) > 2048
+  })
+
 const report = {
   ok:
     buf.length <= 6 * 1024 * 1024 &&
-    tris <= 210000 &&
+    tris <= 520000 && /* director change 2026-07-24: strix hero, 300-400k board budget */
     meshopt &&
     ktx2 &&
     nonKtx2Images.length === 0 &&
-    missing.length === 0,
+    missing.length === 0 &&
+    missingSidecars.length === 0 &&
+    oversized.length === 0 &&
+    oversizedGlbImages.length === 0,
   bytes: buf.length,
   tris,
   meshopt,
@@ -66,6 +110,9 @@ const report = {
   images: (json.images ?? []).length,
   nonKtx2Images,
   missing,
+  missingSidecars,
+  oversized,
+  oversizedGlbImages,
 }
 
 process.stdout.write(`${JSON.stringify(report)}\n`)

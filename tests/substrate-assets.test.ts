@@ -17,7 +17,8 @@ describe('substrate.glb budgets', () => {
     const report = JSON.parse(out)
     expect(report.ok).toBe(true)
     expect(report.bytes).toBeLessThanOrEqual(6 * 1024 * 1024)
-    expect(report.tris).toBeLessThanOrEqual(210000)
+    // director change 2026-07-24: strix hero swap, 300-400k board decimation budget
+    expect(report.tris).toBeLessThanOrEqual(520000)
     expect(report.meshopt).toBe(true)
     expect(report.ktx2).toBe(true)
     expect(report.nonKtx2Images).toEqual([])
