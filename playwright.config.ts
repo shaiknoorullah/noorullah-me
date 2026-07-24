@@ -7,8 +7,9 @@ import { defineConfig, devices } from '@playwright/test'
 //
 // Notes:
 //   - Suite lives at e2e/ (kept separate from vitest unit tests at tests/).
-//   - webServer is auto-started for navigation specs. The current smoke spec
-//     intentionally does not navigate, so it passes without a running server.
+//   - Navigation specs (e2e/scene.spec.ts) need a server: run with
+//     PLAYWRIGHT_WITH_WEB_SERVER=1 to auto-start `bun run dev`, or point
+//     PLAYWRIGHT_BASE_URL at an already-running server.
 //   - Browsers: chromium-only by default; firefox/webkit projects are commented
 //     in so they can be enabled once the build is hardened.
 //   - With `exactOptionalPropertyTypes: true`, optional config fields (workers,

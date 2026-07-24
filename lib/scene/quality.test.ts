@@ -88,6 +88,12 @@ describe('resolveTier', () => {
     expect(resolveTier({ ...baseEnv, webglRenderer: '' })).toBe('high')
   })
 
+  it('forced tier beats a present low signal: forced "high" + coarsePointer stays "high"', () => {
+    expect(
+      resolveTier({ ...baseEnv, forcedTier: 'high', coarsePointer: true })
+    ).toBe('high')
+  })
+
   it('low-tier signal beats renderer: coarsePointer: true + NVIDIA renderer returns "low"', () => {
     expect(
       resolveTier({
