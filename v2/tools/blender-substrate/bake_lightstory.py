@@ -124,13 +124,18 @@ def area(name, loc, color, energy, size, target):
     return ob
 
 
-# the storyboard rig grammar at board scale (hero_depth lesson: lateral key
-# throws long component shadows; ember rim on the skylines; dim cool fill)
-rig = [
-    area("key", (-11, -1, 3.4), KEY5600, 1500, 4.0, (0, 1, 0.7)),
-    area("emberrim", (2.5, 9.5, 1.8), EMBER, 900, 6.0, (-1, 3, 1.0)),
-    area("coolfill", (6, -4, 5.2), COOL, 90, 5.0, (0, 0, 0.6)),
-]
+# THE RIG comes from rig_law.py (single source of truth shared with the
+# QA scripts) — the baked GI must match what ships, by construction.
+import sys as _sys
+_sys.path.insert(0, ROOT)
+import rig_law
+rig_law.clear_rig()
+rig_law.set_world(sc, whisper=0.003)
+rig_law.build_rig(
+    base_energy=float(os.environ.get("BASE_E", "900")),
+    ceiling_strength=float(os.environ.get("CEIL", "2.0")),
+    stage=6,
+)
 
 BUCKETS = {
     "mt_solder_traced": "solder",

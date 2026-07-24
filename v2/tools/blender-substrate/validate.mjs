@@ -86,6 +86,8 @@ const sidecars = [
   'lightstory/curvature_darkmetal.png',
   'lightstory/bentnorm_solder.png',
   'lightstory/bentnorm_component.png',
+  'imperfect/scratch_normal.png',
+  'imperfect/smudge_mask.png',
   'matcaps/matcap-die-base.png',
   'matcaps/matcap-die-ao.png',
   'matcaps/matcap-die-spec.png',

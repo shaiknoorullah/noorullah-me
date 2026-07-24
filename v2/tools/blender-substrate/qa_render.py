@@ -90,8 +90,26 @@ shoot(
     fstop=5.6,
 )
 
-# 2. dead top-down — the transit-map read
+# 2. dead top-down — the transit-map read. Act-4 grade is near-shadowless
+# (STORY): flatten the rig (no lateral hot spots, no dead zones) under a
+# broad neutral dome for this shot only.
+_saved = {}
+for lname, factor in (("key", 0.22), ("emberrim", 0.3), ("coolfill", 1.6)):
+    ld = bpy.data.lights.get(lname)
+    if ld:
+        _saved[lname] = ld.energy
+        ld.energy *= factor
+bpy.ops.object.light_add(type="AREA", location=(0, 9, 21))
+_dome = bpy.context.object
+_dome.data.shape = "DISK"
+_dome.data.size = 34
+_dome.data.color = (1.0, 0.985, 0.96)
+_dome.data.energy = 2600
+look_at(_dome, (0, 9, 0.55))
 shoot("02-topdown.png", (0, 0, 26.0), (0, 0, 0.55), 50)
+bpy.data.objects.remove(_dome, do_unlink=True)
+for lname, e in _saved.items():
+    bpy.data.lights[lname].energy = e
 
 # 3. die macro — act-5 set. QA-session-only staging (documented in the P1
 # report): the shipped resting emissive stays 0.04; the runtime wake

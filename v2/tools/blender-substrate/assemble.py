@@ -185,21 +185,46 @@ def strix_debrand_albedo(img):
     for ch in range(3):
         rgba[..., ch] = np.where(kill, dark, rgba[..., ch])
 
-    # rect fills — numpy rows are bottom-up in Blender pixel order; the
-    # authored rects are top-origin (preview view), so flip the y band
-    def fill(x0, x1, y0_top, y1_top, tone):
-        y0 = h - y1_top
-        y1 = h - y0_top
-        rgba[y0:y1, x0:x1, 0] = tone
-        rgba[y0:y1, x0:x1, 1] = tone
-        rgba[y0:y1, x0:x1, 2] = tone
+    # soft texture-matched patches (director gate 2026-07-24: no flat boxes
+    # that read as redactions at grazing angles). Per region: clamp bright
+    # print pixels to the regional P40 tone, box-blur to smear glyph edges,
+    # feather the border back into the original.
+    def soft_patch(x0, x1, y0_top, y1_top, strength=1.0):
+        y0, y1 = h - y1_top, h - y0_top
+        reg = rgba[y0:y1, x0:x1, :3].copy()
+        rl = 0.3 * reg[..., 0] + 0.59 * reg[..., 1] + 0.11 * reg[..., 2]
+        p40 = float(np.percentile(rl, 40))
+        bright = rl > max(p40 * 1.25, p40 + 0.02)
+        scale = np.where(bright, np.minimum(1.0, p40 / np.maximum(rl, 1e-5)), 1.0)
+        reg *= scale[..., None]
+        k = 10
+        for _ in range(2):
+            cs = np.cumsum(np.pad(reg, ((0, 0), (k, k), (0, 0)), mode="edge"), axis=1)
+            reg = (cs[:, 2 * k:, :] - cs[:, : -2 * k, :]) / (2 * k)
+            cs = np.cumsum(np.pad(reg, ((k, k), (0, 0), (0, 0)), mode="edge"), axis=0)
+            reg = (cs[2 * k:, :, :] - cs[: -2 * k, :, :]) / (2 * k)
+        out = rgba[y0:y1, x0:x1, :3] * (1 - strength) + reg * strength
+        f = 8
+        hgt, wid = y1 - y0, x1 - x0
+        yy = np.minimum(np.arange(hgt), np.arange(hgt)[::-1])[:, None]
+        xx = np.minimum(np.arange(wid), np.arange(wid)[::-1])[None, :]
+        w_edge = np.clip(np.minimum(yy, xx) / f, 0, 1)[..., None]
+        rgba[y0:y1, x0:x1, :3] = (
+            rgba[y0:y1, x0:x1, :3] * (1 - w_edge) + out * w_edge
+        )
 
-    fill(380, 650, 470, 1010, 0.03)    # shroud eye + ROGCOMWAY + THE block
-    fill(690, 960, 195, 232, 0.014)    # 'STRIX B550-F GAMING' silkscreen
-    fill(605, 730, 328, 352, 0.014)    # 'REPUBLIC OF GAMERS' print (upper)
-    fill(770, 1040, 470, 605, 0.014)   # REPUBLIC/GAME ON print block (l-of-socket)
-    fill(990, 1052, 212, 268, 0.02)    # pictured ROG-eye CMOS battery sticker
-    fill(620, 760, 790, 895, 0.016)    # pictured M.2-cover STRIX fragment
+    soft_patch(380, 650, 470, 1010)    # shroud eye + ROGCOMWAY + THE block
+    soft_patch(690, 960, 195, 232)     # 'STRIX B550-F GAMING' silkscreen
+    soft_patch(605, 730, 328, 352)     # 'REPUBLIC OF GAMERS' print (upper)
+    soft_patch(770, 1040, 470, 605)    # REPUBLIC/GAME ON print block
+    soft_patch(990, 1052, 212, 268)    # pictured ROG-eye CMOS battery sticker
+    soft_patch(620, 760, 790, 895)     # pictured M.2-cover STRIX fragment
+    # director gate: pictured M.2/chipset heatsink block — ROG eye, ghost
+    # lettering, Q-RELEASE print (given region (1250,150)-(1650,450) is
+    # inside this), plus the lower pictured cover with the hero-frame
+    # STRIX edge print
+    soft_patch(1080, 1660, 90, 460)
+    soft_patch(1020, 1450, 640, 1015)
     print("DEBRAND albedo: %.2f%% pixels hue-killed" % (100 * kill.mean()))
     img.pixels.foreach_set(rgba.reshape(-1))
     img.pack()
@@ -557,7 +582,16 @@ def prep_die_image(name, transform, size=1024):
 
 
 def darken(rgba):
-    rgba[:, :3] *= 0.5  # SPEC §3: albedo darkened
+    """SPEC §3 albedo darken + director gate 2026-07-24: neutralize the
+    bright package-lid panels and their prints (VOTO/THROTTLE/10/RTANT
+    read as a branded heatspreader under rim light) — bare silicon only.
+    Bright pixels clamp to silicon-dark preserving hue, which drops every
+    print below legibility contrast."""
+    rgba[:, :3] *= 0.5
+    lum = 0.3 * rgba[:, 0] + 0.59 * rgba[:, 1] + 0.11 * rgba[:, 2]
+    cap = 0.13
+    scale = np.where(lum > cap, cap / np.maximum(lum, 1e-5), 1.0)
+    rgba[:, :3] *= scale[:, None]
 
 
 def greenify(rgba):
@@ -623,7 +657,7 @@ pbev.segments = 2
 bpy.ops.object.modifier_apply(modifier=pbev.name)
 plinth.data.materials.append(mt_granite)
 
-mt_floor = new_principled("mt_floor", (0.024, 0.024, 0.028), 0.34)
+mt_floor = new_principled("mt_floor", (0.008, 0.008, 0.01), 0.6)  # void-dark: the floor must never gray the black (fog owns it at runtime)
 bpy.ops.mesh.primitive_plane_add(size=200, location=(0, 0, BOARD_Z - 1.16))
 floor = bpy.context.object
 floor.name = "floor"

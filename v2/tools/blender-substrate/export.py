@@ -27,9 +27,10 @@ FINAL = os.path.join(REPO, "public", "assets", "substrate.glb")
 
 os.makedirs(os.path.dirname(FINAL), exist_ok=True)
 
-# bake-only geometry out of the export
+# bake-only geometry out of the export (lanes + the giant ambient card —
+# the card is the lightmap's dominant source, never runtime geometry)
 for o in bpy.data.objects:
-    if o.name.startswith("tracelane_"):
+    if o.name.startswith(("tracelane_", "rig_", "ambient_card", "refl_card")):
         o.hide_set(True)
         o.hide_render = True
 
