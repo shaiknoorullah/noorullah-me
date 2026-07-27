@@ -139,11 +139,11 @@ export class AudioEngine {
     const t = this.ctx.currentTime
     this.bedGain.gain.cancelScheduledValues(t)
     this.bedGain.gain.setTargetAtTime(BED_GAIN * 0.45, t, 0.4)
-    this.bedGain.gain.setTargetAtTime(
-      this.muffleDir === 'in' ? MUFFLE_GAIN : BED_GAIN,
-      t + 1.2,
-      0.8
-    )
+    // ALWAYS return to BED_GAIN: muffle attenuation lives entirely on the
+    // series muffleGain node now (P6 separation) — conditioning this on
+    // muffleDir double-attenuated the bed and stranded it at 0.3 after
+    // muffle-off (Task 20 review C1)
+    this.bedGain.gain.setTargetAtTime(BED_GAIN, t + 1.2, 0.8)
   }
 
   /** Overlay open: sweep lowpass 22kHz→200Hz + volume 0.8→0.3, 6s expo.out.

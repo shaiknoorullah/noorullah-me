@@ -17,7 +17,10 @@ describe('choreography contract', () => {
 
   it('fires audio.setAct on section entry and never on scroll', () => {
     expect(src).toContain('audio.setAct')
-    expect(src).not.toContain('onScroll.*playSfx')
+    // no scroll-driven SFX (SPEC §5.6 "no scroll sounds") — the brief's
+    // original assertion was a literal substring that could never match;
+    // this one actually inspects scroll handlers for playSfx calls
+    expect(src).not.toMatch(/on(?:Scroll|Update)[^}]*playSfx/s)
   })
 
   it('reduced motion renders counters at final values and returns early', () => {

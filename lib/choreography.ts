@@ -77,10 +77,12 @@ function animateCount(el: HTMLElement) {
   })
 }
 
-/* Act boundaries: the bed dips and returns (never a hard switch). Index
-   into this list is the act number consumed by audio.setAct — mirrors
-   SECTION_ACT in lib/scene/effects.ts (kept separate: choreography walks
-   entry/exit edges, effects.ts blends per-frame camera state). */
+/* Act boundaries: the bed dips and returns (never a hard switch). The
+   index passed to audio.setAct is a section ORDINAL, not the grade-act
+   number — SECTION_ACT in lib/scene/effects.ts collapses several sections
+   into shared acts (principles→4, writing/contact→5) and the two must NOT
+   be conflated if setAct ever consumes its argument (today it ignores it:
+   every boundary is the same dip-and-return). */
 const ACT_SECTIONS = [
   'statement',
   'work',
