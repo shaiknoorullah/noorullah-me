@@ -17,6 +17,7 @@ echo "using blender: $BLENDER"
 "$BLENDER" -b out/substrate.blend -P bake_trace_mask.py
 "$BLENDER" -b out/substrate.blend -P bake_ao.py
 "$BLENDER" -b out/substrate.blend -P bake_lightstory.py
+"$BLENDER" -b out/substrate.blend -P bake_imperfections.py
 "$BLENDER" -b --factory-startup -P bake_matcaps.py
 "$BLENDER" -b out/substrate.blend -P export.py
 

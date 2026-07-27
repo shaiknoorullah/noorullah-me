@@ -117,5 +117,14 @@ export const DISTRICTS = [
 gen = os.path.join(REPO, "lib", "scene", "anchors.generated.ts")
 with open(gen, "w") as f:
     f.write(ts)
+# generated file is biome-checked (lib/ is in the lint scope) — format it
+# with the repo's own formatter so the lint gate stays green
+try:
+    subprocess.run(
+        ["bunx", "--bun", "@biomejs/biome", "check", "--write", gen],
+        check=False, cwd=REPO, capture_output=True,
+    )
+except Exception:
+    pass
 print("DONE export: %s + anchors.generated.ts" % FINAL)
 sys.exit(0)

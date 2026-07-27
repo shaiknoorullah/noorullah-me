@@ -129,13 +129,14 @@ def area(name, loc, color, energy, size, target):
 import sys as _sys
 _sys.path.insert(0, ROOT)
 import rig_law
+os.environ.setdefault("CEILING_STR", "0.25")  # bake = board-wide framing (locked)
+import lookdev_cinematic_rig as cine  # rig-only shim, locked values
 rig_law.clear_rig()
-rig_law.set_world(sc, whisper=0.003)
-rig_law.build_rig(
-    base_energy=float(os.environ.get("BASE_E", "900")),
-    ceiling_strength=float(os.environ.get("CEIL", "2.0")),
-    stage=6,
-)
+rig_law.set_world(sc, whisper=float(os.environ.get("WHISPER", "0.003")))
+cine.build_cinematic()      # DIRECTOR: the cinematic rig is the lighting law
+cine.metal_fix()            # anisotropic brushed metals persist to export
+rig_law.color_pass(ember_scale=1.3)  # wide framing: ember x1.3 (locked)
+
 
 BUCKETS = {
     "mt_solder_traced": "solder",

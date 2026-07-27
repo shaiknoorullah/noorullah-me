@@ -64,7 +64,8 @@ def _rect(name, loc, sx, sy, energy, color, target):
     return ob
 
 
-def _emissive_card(name, loc, sx, sy, strength, target=None, gradient=False):
+def _emissive_card(name, loc, sx, sy, strength, target=None, gradient=False,
+                   color=(1.0, 1.0, 1.0)):
     bpy.ops.mesh.primitive_plane_add(location=loc)
     p = bpy.context.object
     p.name = name
@@ -77,7 +78,7 @@ def _emissive_card(name, loc, sx, sy, strength, target=None, gradient=False):
     nt.nodes.clear()
     outn = nt.nodes.new("ShaderNodeOutputMaterial")
     em = nt.nodes.new("ShaderNodeEmission")
-    em.inputs["Color"].default_value = (1, 1, 1, 1)
+    em.inputs["Color"].default_value = (*color, 1)
     if gradient:
         # bible §2.3: white -> 40% grey along the length; the rolled-off
         # streak the heatsinks reflect (never a uniform CG slab)
@@ -151,8 +152,20 @@ def build_rig(base_energy=900.0, ceiling_strength=2.0, stage=6):
         # static — the camera's movement creates the specular sweep
         _rect("rig_grazer", (-9, -13, 1.3), 2, 6, base_energy * 0.5, KEY5000,
               (2, 2, 0.8))
-    # stage 6 = full rig; no disk fill — the whisper world + ceiling card
-    # ARE the fill (8:1-16:1 on-face, shadow detail via A, never gray lift)
+    if stage >= 6:
+        color_pass()  # ported color pass (locked 2026-07-27)
+    # full rig; no disk fill — the whisper world + ceiling card ARE the
+    # fill (8:1-16:1 on-face, shadow detail via A, never gray lift)
+
+
+def color_pass(ember_scale=1.0):
+    """LOCKED COLOR PASS (director 2026-07-27, ported from the lookdev
+    verdict): ember edge on the I/O cluster + desat cool fill. Part of THE
+    RIG everywhere (bake + QA); ember scales x1.3 on wide framings."""
+    _rect("rig_ember", (-13, 12, 5.5), 4, 16, 4680.0 * ember_scale,
+          (1.0, 0.42, 0.10), (-5.5, 6, 3.5))
+    _rect("rig_cfill", (16, -4, 7), 10, 10, 2250.0,
+          (0.72, 0.76, 0.97), BOARD_CENTER)
 
 
 def add_haze(density=0.002, anisotropy=0.45):

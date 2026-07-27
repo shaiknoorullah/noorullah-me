@@ -214,7 +214,7 @@ def strix_debrand_albedo(img):
         )
 
     soft_patch(380, 650, 470, 1010)    # shroud eye + ROGCOMWAY + THE block
-    soft_patch(690, 960, 195, 232)     # 'STRIX B550-F GAMING' silkscreen
+    soft_patch(680, 970, 205, 245)     # 'STRIX B550-F GAMING' silkscreen (re-measured 2026-07-24: text at y 215-235)
     soft_patch(605, 730, 328, 352)     # 'REPUBLIC OF GAMERS' print (upper)
     soft_patch(770, 1040, 470, 605)    # REPUBLIC/GAME ON print block
     soft_patch(990, 1052, 212, 268)    # pictured ROG-eye CMOS battery sticker
@@ -581,6 +581,14 @@ def prep_die_image(name, transform, size=1024):
     return img
 
 
+DIE_BRAND_RECTS_1024 = [
+    # top-origin px in the 1024 die albedo: the gray lid panels whose
+    # prints ("10" box, VOTO/THROTTLE/400cc) ghost through under rim light
+    (390, 592, 0, 100),
+    (500, 566, 14, 80),
+]
+
+
 def darken(rgba):
     """SPEC §3 albedo darken + director gate 2026-07-24: neutralize the
     bright package-lid panels and their prints (VOTO/THROTTLE/10/RTANT
@@ -592,6 +600,16 @@ def darken(rgba):
     cap = 0.13
     scale = np.where(lum > cap, cap / np.maximum(lum, 1e-5), 1.0)
     rgba[:, :3] *= scale[:, None]
+    # flatten the print panels entirely — residual dark-on-dark contrast
+    # still ghosted the "10" logo under rim light (director 2026-07-27)
+    side = int(np.sqrt(rgba.shape[0]))
+    if side * side == rgba.shape[0]:
+        img2 = rgba[:, :3].reshape(side, side, 3)
+        for x0, x1, y0t, y1t in DIE_BRAND_RECTS_1024:
+            sx0, sx1 = int(x0 * side / 1024), int(x1 * side / 1024)
+            sy0, sy1 = side - int(y1t * side / 1024), side - int(y0t * side / 1024)
+            reg = img2[sy0:sy1, sx0:sx1]
+            reg[:] = np.clip(np.median(reg, axis=(0, 1)), 0.01, 0.08)
 
 
 def greenify(rgba):

@@ -1,1 +1,4 @@
 out/
+qa/*.exr
+qa/**/*.exr
+__pycache__/
