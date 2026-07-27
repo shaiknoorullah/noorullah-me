@@ -21,6 +21,7 @@ import { DustField } from './DustField'
 import { Effects } from './Effects'
 import { Rig } from './Rig'
 import { SubstrateSet } from './SubstrateSet'
+import { TransitionParticles } from './TransitionParticles'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -117,6 +118,7 @@ export default function SceneRoot(): JSX.Element {
         <fogExp2 attach="fog" args={[0x000000, 0.028]} />
         <SubstrateSet director={director} onSun={setSun} />
         <DieDive director={director} />
+        <TransitionParticles director={director} />
         <DustField />
         {ready && <Rig director={director} />}
         <Effects director={director} sun={sun} />
