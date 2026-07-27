@@ -35,7 +35,9 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "tempus": "^1.0.0-dev.17",
-    "three": "0.185.1"
+    "three": "0.185.1",
+    "troika-three-text": "0.52.4",
+    "troika-three-utils": "0.52.4"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",

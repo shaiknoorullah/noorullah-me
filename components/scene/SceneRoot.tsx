@@ -22,6 +22,7 @@ import { DieDive } from './DieDive'
 import { DustField } from './DustField'
 import { Effects } from './Effects'
 import { Rig } from './Rig'
+import { StatementText } from './StatementText'
 import { SubstrateSet } from './SubstrateSet'
 import { TransitionParticles } from './TransitionParticles'
 
@@ -153,6 +154,7 @@ export default function SceneRoot(): JSX.Element {
         <DieDive director={director} />
         <TransitionParticles director={director} />
         <DustField />
+        <StatementText />
         {ready && <Rig director={director} />}
         <Effects director={director} sun={sun} />
       </Suspense>
