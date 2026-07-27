@@ -18,12 +18,14 @@ import { detectTier } from '../../lib/scene/quality'
 import { quality, REDUCED } from '../../lib/scene/store'
 import { Effects } from './Effects'
 import { Rig } from './Rig'
+import { SubstrateSet } from './SubstrateSet'
 
 gsap.registerPlugin(ScrollTrigger)
 
 export default function SceneRoot(): JSX.Element {
   const director = useMemo(() => new Director(REDUCED), [])
   const [ready, setReady] = useState(false)
+  const [sun, setSun] = useState<THREE.Mesh | null>(null)
 
   useEffect(() => {
     quality.tier = detectTier()
@@ -109,8 +111,9 @@ export default function SceneRoot(): JSX.Element {
       <Suspense fallback={null}>
         <color attach="background" args={[0x000000]} />
         <fogExp2 attach="fog" args={[0x000000, 0.028]} />
+        <SubstrateSet director={director} onSun={setSun} />
         {ready && <Rig director={director} />}
-        <Effects director={director} sun={null} />
+        <Effects director={director} sun={sun} />
       </Suspense>
     </Canvas>
   )

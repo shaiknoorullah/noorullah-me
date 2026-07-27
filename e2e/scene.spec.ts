@@ -27,17 +27,17 @@ test.describe('scene', () => {
     await expect(canvas).toBeVisible({ timeout: 15_000 })
   })
 
-  // P0 proof-cube superseded by Task 9 scene skeleton; scene geometry lands
-  // in master Task 10 which must restore a pixel-content assertion (green
-  // pulse/board). Pixel logic kept intact (not deleted) so Task 10 can
-  // re-enable this by dropping `.fixme`.
-  test.fixme('canvas renders the green wireframe cube', async ({ page }) => {
+  // P0 proof-cube superseded by Task 9 scene skeleton; scene geometry landed
+  // in master Task 10 (GLB + light rig + fog cards), which restores this
+  // pixel-content assertion. Re-enabled by dropping `.fixme` and renaming.
+  test('canvas renders the substrate set', async ({ page }) => {
     await page.goto('/')
 
     const canvas = page.locator('canvas')
     await expect(canvas).toBeVisible({ timeout: 15_000 })
 
-    // Let a few frames render (rotation is running) before sampling pixels.
+    // Let a few frames render (camera intro + pulse head are animating)
+    // before sampling pixels.
     await page.waitForTimeout(1500)
 
     const dataUrl = await canvas.evaluate<string, HTMLCanvasElement>(
@@ -54,7 +54,7 @@ test.describe('scene', () => {
     const png = PNG.sync.read(buf)
 
     let lit = 0
-    let green = 0
+    const luminances: number[] = []
 
     for (let i = 0; i < png.data.length; i += 4) {
       const r = png.data[i] ?? 0
@@ -62,13 +62,29 @@ test.describe('scene', () => {
       const b = png.data[i + 2] ?? 0
 
       if (Math.max(r, g, b) > 32) lit++
-      if (g > 100 && g > r && g > b + 50) green++
+      luminances.push(0.2126 * r + 0.7152 * g + 0.0722 * b)
     }
 
+    luminances.sort((a, b) => a - b)
+    const at = (p: number) =>
+      luminances[
+        Math.min(luminances.length - 1, Math.floor(p * luminances.length))
+      ] ?? 0
+    const median = at(0.5)
+    const p95 = at(0.95)
+
     expect(lit, 'canvas is not black').toBeGreaterThan(200)
+    // Task 10 ships the lit rig + GLB (key/fill/rim spots, HDRI, board
+    // materials) but the trace-pulse lanes (Task 11) are the only
+    // *saturated green* signal on the set pre-pulse, so a strict green-pixel
+    // count isn't a meaningful assertion yet. Instead, prove the frame is a
+    // genuinely lit, non-uniform set (bright highlights well above the
+    // median, not flat noise or a uniform fog card) via a p95/median
+    // luminance ratio. Task 11 restores a strict green-pixel threshold once
+    // the pulse lanes render every frame.
     expect(
-      green,
-      'the green wireframe cube specifically is visible'
-    ).toBeGreaterThan(50)
+      p95 > Math.max(median * 3, 1),
+      `set is lit and non-uniform, not flat noise (p95=${p95.toFixed(1)}, median=${median.toFixed(1)})`
+    ).toBe(true)
   })
 })
