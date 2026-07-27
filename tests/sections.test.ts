@@ -28,8 +28,12 @@ describe('landing anatomy (DESIGN §5 + SPEC §4/§8/§9)', () => {
 
   it('carries the CC-BY credits in the SPEC §9 format', () => {
     const s = src()
-    expect(s).toContain('MotherBoard + Components')
-    expect(s).toContain('Daniel Cardona')
+    // the SHIPPED hero (P1 director swap): Strix by MUSHROOM_BUILDS — the
+    // pre-swap Cardona board is the unused fallback and must NOT be
+    // credited as the hero (P7 GO hard requirement)
+    expect(s).toContain('MUSHROOM_BUILDS')
+    expect(s).toContain('3eba5f45bed74fbeb2647de38047000f')
+    expect(s).not.toContain('Daniel Cardona')
     expect(s).toContain('Microchip - Prototype')
     expect(s).toContain('re1monsen')
     expect(s).toContain(

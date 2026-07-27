@@ -134,9 +134,13 @@ function Credits(): JSX.Element {
         lineHeight: 1.8,
       }}
     >
+      {/* the SHIPPED hero is the Strix by MUSHROOM_BUILDS (P1 director
+          swap 2026-07-24; assemble.py HERO=strix) — the spec §9 Cardona
+          line predates the swap and credits the unused fallback */}
       <p>
-        Model &quot;MotherBoard + Components&quot; by Daniel Cardona
-        [sketchfab.com/3d-models/motherboard-components-3bc94057328243d4b341a55f59160f8a],
+        Model &quot;Asus Strix b-550-f Gaming Motherboard Realistic&quot; by
+        MUSHROOM_BUILDS
+        [sketchfab.com/3d-models/asus-strix-b-550-f-gaming-motherboard-realistic-3eba5f45bed74fbeb2647de38047000f],
         licensed CC-BY 4.0, modified (re-materialed, re-lit, optimized)
       </p>
       <p>
