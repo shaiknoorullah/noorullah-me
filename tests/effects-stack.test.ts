@@ -30,8 +30,8 @@ describe('post stack order (SPEC §5.7)', () => {
     }
   })
 
-  it('bloom threshold is .72 with mipmap blur', () => {
-    expect(src).toContain('luminanceThreshold: 0.72')
+  it('bloom threshold is .80 with mipmap blur (director ruling 2026-07-27)', () => {
+    expect(src).toContain('luminanceThreshold: 0.8')
     expect(src).toContain('mipmapBlur: true')
   })
 

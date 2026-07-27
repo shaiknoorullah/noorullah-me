@@ -207,4 +207,7 @@ Director, lerped on act transitions (same spring as the camera). Halation = Bloo
 - [x] Blacks rich not crushed — void sits at ~6 IRE, solder-mask detail survives
 - [x] No hue banding — 8-bit output dithered by grain; gradients inspected at 100%
 - [x] Green stays #A4EB53-clean — no hue rotation applied anywhere; blue-channel
-      curve deviation at b=0.325 is ≤ 0.01; saturation moves are luma-anchored
+      curve deviation at b=0.325 is ≤ 0.011 on the pulse-dominant acts (0/2/3/4)
+      and ≤ 0.02 on the two authored outliers (act 1 cool lift +0.0175, act 5
+      warm pulldown −0.0126) — acts.json is the source of truth (reconciled
+      2026-07-27, director ruling; runtime gate: tests/grade.test.ts)

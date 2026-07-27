@@ -101,7 +101,10 @@ export function Effects({
     () =>
       new BloomEffect({
         intensity: 0.45,
-        luminanceThreshold: 0.72,
+        // director ruling 2026-07-27 (supersedes the master's .72): bloom
+        // is the halation instrument — only emissive + rim glints cross;
+        // Act-5's "bloom lift" is GAIN, not threshold
+        luminanceThreshold: 0.8,
         luminanceSmoothing: 0.3,
         mipmapBlur: true,
       }),
