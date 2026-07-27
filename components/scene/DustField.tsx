@@ -61,15 +61,18 @@ export function dustStrata(low: boolean): StratumCfg[] {
     far,
     mid,
     {
-      // director gate 2026-07-27: near motes halved (size + alpha) — the
-      // corn model is bigger BUT softer AND dimmer; the board is the
-      // subject, dust is air
+      // director gate 2026-07-27 ("atmosphere, not confetti"), re-tamed
+      // 2026-07-28 at the P4→P5 gate: the P3 numbers were approved while
+      // the dust program failed to link (vZoneFade defect) — the first
+      // honest render showed the near bokeh DOMINANT. Halved again (size
+      // + alpha) and defocus growth capped in the vert shader; the board
+      // is the subject, dust is air.
       count: 60,
       box: [8, 4, 8],
       center: [4, 2.4, 3.4],
-      sizeMin: 0.15,
-      sizeMax: 0.4,
-      opacity: 0.04,
+      sizeMin: 0.08,
+      sizeMax: 0.2,
+      opacity: 0.02,
       speedMax: 0.25,
       zoneCull: true,
     },
@@ -152,11 +155,12 @@ void main() {
   // twinkle 30–200s period (slower motes drift longest)
   float period = mix(200.0, 30.0, aSpeed);
   vTwinkle = 0.75 + 0.25 * sin(uTime / period * 6.2831 + aPhase * 6.2831);
-  // optical DOF: out-of-focus = BIGGER + softer + dimmer
+  // optical DOF: out-of-focus = BIGGER + softer + dimmer (growth capped
+  // at 2x — 3x let near bokeh dominate the hero, P4→P5 gate regression)
   vDefocus = smoothstep(uDofAmount.x, uDofAmount.y, distance(world.xyz, uDofFocus));
   vec4 mv = viewMatrix * world;
   vDist = -mv.z;
-  float size = mix(aSize, aSize * 3.0, vDefocus);
+  float size = mix(aSize, aSize * 2.0, vDefocus);
   gl_PointSize = size * uSizeScale / max(-mv.z, 0.001);
   vTint = aTint;
   gl_Position = projectionMatrix * mv;
@@ -204,8 +208,9 @@ void main() {
              * (1.0 - smoothstep(uConeLen * 0.6, uConeLen, d));
   float fade = smoothstep(0.25, 1.1, vDist) * (1.0 - smoothstep(22.0, 32.0, vDist));
   vec3 col = mix(uBone, uSignal, vTint);
-  // out-of-focus = dimmer
-  float a = disc * uOpacity * vTwinkle * fade * mix(1.0, 0.22, vDefocus) * (1.0 + cone * 1.6) * vZoneFade;
+  // out-of-focus = dimmer (0.15 floor — defocused near bokeh must read
+  // as air, not shapes; P4→P5 gate re-tame)
+  float a = disc * uOpacity * vTwinkle * fade * mix(1.0, 0.15, vDefocus) * (1.0 + cone * 1.6) * vZoneFade;
   gl_FragColor = vec4(col, a);
 }
 `
