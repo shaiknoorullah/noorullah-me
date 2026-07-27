@@ -36,18 +36,26 @@ export function DieDive({ director }: { director: Director }) {
   const gltf = useGLTF(SUBSTRATE_GLB_URL)
   const gl = useThree((s) => s.gl)
 
+  /* gltfpack wraps each named node in an Object3D whose mesh child is
+     anonymous (dieblock_00 -> mesh_4) — match the NODE by name and lift
+     it; the mesh rides along. Never gate the name match on instanceof
+     Mesh (that made this component silently inert against the real GLB) */
   const ihs = useMemo(() => {
-    let found: THREE.Mesh | null = null
+    let found: THREE.Object3D | null = null
     gltf.scene.traverse((o) => {
-      if (o.name === 'ihs' && o instanceof THREE.Mesh) found = o
+      if (o.name === 'ihs') found = o
     })
-    return found as THREE.Mesh | null
+    return found as THREE.Object3D | null
   }, [gltf])
 
   const blocks = useMemo(() => {
-    const out: THREE.Mesh[] = []
+    const out: THREE.Object3D[] = []
     gltf.scene.traverse((o) => {
-      if (o.name.startsWith('dieblock_') && o instanceof THREE.Mesh) out.push(o)
+      if (
+        o.name.startsWith('dieblock_') &&
+        !o.parent?.name.startsWith('dieblock_')
+      )
+        out.push(o)
     })
     return out
   }, [gltf])
@@ -60,10 +68,17 @@ export function DieDive({ director }: { director: Director }) {
      GLB shares one mt_die across all 22 — stitched Task 10 review note) */
   useEffect(() => {
     blockMats.current = blocks.map((b) => {
-      const m = (b.material as THREE.MeshStandardMaterial).clone()
+      // clone once per BLOCK and share it across the block's mesh
+      // descendants, so the cascade addresses blocks, not primitives
+      const meshes: THREE.Mesh[] = []
+      b.traverse((c) => {
+        if (c instanceof THREE.Mesh) meshes.push(c)
+      })
+      const src = meshes[0]?.material as THREE.MeshStandardMaterial | undefined
+      const m = (src ?? new THREE.MeshStandardMaterial()).clone()
       m.emissive = new THREE.Color(SIGNAL)
       m.emissiveIntensity = DIE_EMISSIVE_FLOOR
-      b.material = m
+      for (const mesh of meshes) mesh.material = m
       return m
     })
     if (ihs) ihsHome.current = ihs.position.y

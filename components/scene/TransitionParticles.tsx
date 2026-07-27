@@ -128,11 +128,20 @@ export function TransitionParticles({ director }: { director: Director }) {
     if (!sim || readyRef.current) return
     let dead = false
     const go = async () => {
+      /* gltfpack wraps each dieblock node in an Object3D whose mesh child
+         is anonymous (dieblock_00 -> mesh_4) — match nodes by name, then
+         collect the Mesh descendants (same contract fix as DieDive) */
       const dieMeshes: THREE.Mesh[] = []
       gltf.scene.traverse((o) => {
-        if (o.name.startsWith('dieblock_') && o instanceof THREE.Mesh)
-          dieMeshes.push(o)
+        if (!o.name.startsWith('dieblock_')) return
+        if (o.parent?.name.startsWith('dieblock_')) return
+        o.traverse((c) => {
+          if (c instanceof THREE.Mesh && !dieMeshes.includes(c))
+            dieMeshes.push(c)
+        })
       })
+      if (dieMeshes.length === 0)
+        console.warn('[substrate] no dieblock meshes; re-formation disarmed')
       const rand = mulberry32(1337)
       const diePts = sampleMeshSurfacePoints(dieMeshes, COUNT, rand)
       const px = await maskPixels('/assets/tracemap-src.png')

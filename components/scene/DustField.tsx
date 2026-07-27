@@ -80,7 +80,6 @@ const VERT = /* glsl */ `
 attribute float aSize;
 uniform vec4 uContentZone;
 uniform float uZoneCull;
-varying float vZoneFade;
 attribute float aPhase;
 attribute float aSpeed;
 attribute float aTint;
@@ -184,6 +183,7 @@ varying float vTwinkle;
 varying vec3 vWorld;
 varying float vDist;
 varying float vDefocus;
+varying float vZoneFade;
 
 // hexagon polygon distance (CORN §5 polygonDf, shapeSides = 6)
 float polygonDf(vec2 uv) {

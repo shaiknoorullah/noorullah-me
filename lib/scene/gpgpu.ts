@@ -94,6 +94,10 @@ export function sampleMeshSurfacePoints(
   }
   const total = tris.reduce((s, t) => s + t.area, 0)
   const out = new Float32Array(count * 3)
+  // no usable triangles (empty meshes / degenerate geometry): return the
+  // zero field rather than throwing mid-bake — the caller logs and the
+  // transition simply re-forms at the origin instead of crashing
+  if (tris.length === 0) return out
   for (let i = 0; i < count; i++) {
     let pick = rand() * total
     let tri = tris[0]!

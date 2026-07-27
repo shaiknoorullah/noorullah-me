@@ -1,7 +1,8 @@
-/* Per-act QA screenshots through the real Director pipeline (P3 gate).
-   Injects synthetic section anchors (Task 19's landing DOM lands later),
-   rebuilds the Director keys, scrolls to each act and lets the springs
-   settle. GPU launch attempted first; falls back to SwiftShader. */
+/* Per-act QA screenshots through the real Director pipeline (P3 gate;
+   P4 adds the act3→4 dive mid-morph frame). Injects synthetic section
+   anchors (Task 19's landing DOM lands later), rebuilds the Director
+   keys, scrolls to each act and lets the springs settle. GPU launch
+   attempted first; falls back to SwiftShader. */
 import { chromium, type Page } from '@playwright/test'
 import { mkdirSync, writeFileSync } from 'node:fs'
 
@@ -125,6 +126,44 @@ async function run(gpu: boolean): Promise<boolean> {
       Buffer.from(dataUrl.split(',')[1] ?? '', 'base64')
     )
     console.log(`ACT rendered ${name}`)
+
+    if (name === 'act3-evidence') {
+      // Act 3→4 transition (P4 gate): park the scroll where diveT ≈ 0.45 —
+      // board half-dissolved, IHS mid-lift, GPGPU re-formation streaming.
+      // diveT is linear in raw scroll progress p between the dive keys
+      // (director.ts), and p = scrollY / (body.scrollHeight - innerHeight)
+      // (store.readScroll) — so the target offset is exact, no probing.
+      await page.evaluate(() => {
+        const dir = (
+          window as unknown as {
+            __dir?: { keys: { tag?: string; p: number }[] }
+          }
+        ).__dir
+        if (!dir) return
+        const a = dir.keys.find((k) => k.tag === 'dive-start')
+        const b = dir.keys.find((k) => k.tag === 'dive-end')
+        if (!a || !b || b.p <= a.p) return
+        const p = a.p + (b.p - a.p) * 0.45
+        const max = Math.max(
+          1,
+          document.body.scrollHeight - window.innerHeight
+        )
+        window.scrollTo({ top: p * max, behavior: 'instant' })
+      })
+      await page.waitForTimeout(3200) // springs settle + sim develops
+      const diveT = await page.evaluate(
+        () =>
+          (window as unknown as { __dir?: { diveT: number } }).__dir?.diveT ??
+          -1
+      )
+      console.log(`TRANSITION diveT=${diveT.toFixed(3)}`)
+      const mid = await grab(page)
+      writeFileSync(
+        `${OUT}/act3to4-transition.png`,
+        Buffer.from(mid.split(',')[1] ?? '', 'base64')
+      )
+      console.log('ACT rendered act3to4-transition')
+    }
   }
   await browser.close()
   return true
