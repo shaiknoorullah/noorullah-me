@@ -320,6 +320,10 @@ export function Loader({
       const silent = lastLoaded === 0 && now - mountAt > 1200
       if ((p >= 1 || silent) && fontsDone && doneAt === null) {
         doneAt = now
+        // an instant/cached load should show the title resolved — the
+        // progress-scrub never ran, so settle the timeline (re-review
+        // residual: blank SUBSTRATE through the silent dwell)
+        titleTlRef.current?.progress(1)
       }
       // Fix 3 (P5 review): a stalled load still forces arm-eligibility 20s
       // after mount, regardless of progress/fonts state.
