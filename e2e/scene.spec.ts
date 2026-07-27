@@ -1,11 +1,11 @@
 import { expect, test } from '@playwright/test'
 import { PNG } from 'pngjs'
 
-// Scene smoke: proves the R3F canvas actually renders pixels, not just that
-// it mounts. Complements e2e/smoke.spec.ts (harness + axe fixture wiring
-// only) — this is the first spec that navigates, exercising Stage.tsx's
-// black background + rotating #A4EB53 wireframe cube end-to-end through a
-// real (headless, SwiftShader-backed) WebGL context.
+// Scene smoke: proves the R3F canvas actually mounts and renders, not just
+// that the route loads. Complements e2e/smoke.spec.ts (harness + axe
+// fixture wiring only) — this is the first spec that navigates, exercising
+// the scene island end-to-end through a real (headless, SwiftShader-backed)
+// WebGL context.
 //
 // Pixels are sampled via an in-page, rAF-synced `canvas.toDataURL()` rather
 // than Playwright's CDP-level `locator.screenshot()`. Diagnosed in this
@@ -20,7 +20,18 @@ import { PNG } from 'pngjs'
 // freshly drawn, sidestepping that race entirely.
 
 test.describe('scene', () => {
-  test('canvas renders the green wireframe cube', async ({ page }) => {
+  test('canvas mounts', async ({ page }) => {
+    await page.goto('/')
+
+    const canvas = page.locator('canvas')
+    await expect(canvas).toBeVisible({ timeout: 15_000 })
+  })
+
+  // P0 proof-cube superseded by Task 9 scene skeleton; scene geometry lands
+  // in master Task 10 which must restore a pixel-content assertion (green
+  // pulse/board). Pixel logic kept intact (not deleted) so Task 10 can
+  // re-enable this by dropping `.fixme`.
+  test.fixme('canvas renders the green wireframe cube', async ({ page }) => {
     await page.goto('/')
 
     const canvas = page.locator('canvas')

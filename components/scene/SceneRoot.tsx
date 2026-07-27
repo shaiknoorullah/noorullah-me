@@ -49,9 +49,17 @@ export default function SceneRoot(): JSX.Element {
     director.buildKeys()
     ScrollTrigger.refresh()
 
+    // 'refresh' fires with pin spacers applied — buildKeys() re-resolves the
+    // shot anchors against post-refresh layout. It must NOT call
+    // ScrollTrigger.refresh() itself: rebuild is also registered as a
+    // 'refresh' listener below, and refresh() dispatches its own 'refresh'
+    // event at its tail (gsap/ScrollTrigger.js), so calling it from inside
+    // the listener recurses unconditionally (confirmed: RangeError, maximum
+    // call stack). Reference (v2/site/src/components/scene/Stage.tsx
+    // ~85-105) keeps refresh() calls outside rebuild — only the initial call
+    // above and the fonts.ready call below trigger it.
     const rebuild = () => {
       director.buildKeys()
-      ScrollTrigger.refresh()
     }
     addEventListener('resize', rebuild)
     ScrollTrigger.addEventListener('refresh', rebuild)
