@@ -1,12 +1,10 @@
 {
   "$schema": "node_modules/@biomejs/biome/configuration_schema.json",
-
   "vcs": {
     "enabled": true,
     "clientKind": "git",
     "useIgnoreFile": true
   },
-
   "files": {
     "ignoreUnknown": true,
     "includes": [
@@ -32,7 +30,6 @@
       "!**/root.css"
     ]
   },
-
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -40,7 +37,6 @@
     "lineEnding": "lf",
     "lineWidth": 80
   },
-
   "assist": {
     "actions": {
       "source": {
@@ -48,7 +44,6 @@
       }
     }
   },
-
   "linter": {
     "enabled": true,
     "domains": {
@@ -65,7 +60,6 @@
         "noUnknownMediaFeatureName": "off",
         "noInvalidUseBeforeDeclaration": "error"
       },
-
       "style": {
         "noNonNullAssertion": "off",
         "noUnusedTemplateLiteral": "off",
@@ -94,7 +88,6 @@
         },
         "noNestedTernary": "error"
       },
-
       "suspicious": {
         "noExplicitAny": "error",
         "noEmptyBlockStatements": "warn",
@@ -108,19 +101,16 @@
         "noSparseArray": "error",
         "useAwait": "off"
       },
-
       "complexity": {
         "noForEach": "off",
         "useSimplifiedLogicExpression": "warn",
         "useFlatMap": "warn"
       },
-
       "security": {
         "noGlobalEval": "error",
         "noDangerouslySetInnerHtml": "warn",
         "noDangerouslySetInnerHtmlWithChildren": "error"
       },
-
       "a11y": {
         "useKeyWithClickEvents": "warn",
         "useValidAnchor": "warn",
@@ -135,11 +125,9 @@
         "noRedundantAlt": "error",
         "useSemanticElements": "warn"
       },
-
       "performance": {
         "noImgElement": "error"
       },
-
       "nursery": {
         "useSortedClasses": {
           "level": "error",
@@ -155,7 +143,6 @@
       }
     }
   },
-
   "javascript": {
     "formatter": {
       "enabled": true,
@@ -164,13 +151,11 @@
       "trailingCommas": "es5"
     }
   },
-
   "json": {
     "parser": {
       "allowComments": true
     }
   },
-
   "css": {
     "linter": {
       "enabled": true
@@ -183,7 +168,6 @@
       "tailwindDirectives": true
     }
   },
-
   "overrides": [
     {
       "includes": ["**/*.css"],
@@ -252,6 +236,16 @@
           },
           "style": {
             "noDescendingSpecificity": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["lib/scene/anchors.generated.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noApproximativeNumericConstant": "off"
           }
         }
       }

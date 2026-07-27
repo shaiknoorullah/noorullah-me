@@ -40,18 +40,29 @@ test.describe('scene', () => {
     // before sampling pixels.
     await page.waitForTimeout(1500)
 
-    const dataUrl = await canvas.evaluate<string, HTMLCanvasElement>(
-      (el) =>
-        new Promise<string>((resolve) => {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => resolve(el.toDataURL('image/png')))
+    const grab = () =>
+      canvas.evaluate<string, HTMLCanvasElement>(
+        (el) =>
+          new Promise<string>((resolve) => {
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => resolve(el.toDataURL('image/png')))
+            })
           })
-        })
-    )
+      )
+
+    const dataUrl = await grab()
+    // second capture ~2.5s later: the pulse heads commute 10-15% of a lane
+    // in that window, so the green signal must MOVE (animation proof, and
+    // robust to whichever phase the first capture caught)
+    await page.waitForTimeout(2500)
+    const dataUrl2 = await grab()
 
     const base64 = dataUrl.split(',')[1] ?? ''
     const buf = Buffer.from(base64, 'base64')
     const png = PNG.sync.read(buf)
+    const png2 = PNG.sync.read(
+      Buffer.from(dataUrl2.split(',')[1] ?? '', 'base64')
+    )
 
     let lit = 0
     const luminances: number[] = []
@@ -86,5 +97,28 @@ test.describe('scene', () => {
       p95 > Math.max(median * 3, 1),
       `set is lit and non-uniform, not flat noise (p95=${p95.toFixed(1)}, median=${median.toFixed(1)})`
     ).toBe(true)
+    // Task 11 (restored per the Task 10 note): the trace pulses + spill base
+    // + pulse head put saturated signal-green on screen, and it MOVES.
+    const greenMask = (d: Buffer | Uint8Array) => {
+      const set = new Set<number>()
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i] ?? 0
+        const g = d[i + 1] ?? 0
+        const b = d[i + 2] ?? 0
+        if (g > 60 && g > r * 1.25 && g > b * 1.25) set.add(i / 4)
+      }
+      return set
+    }
+    const g1 = greenMask(png.data)
+    const g2 = greenMask(png2.data)
+    const maxGreen = Math.max(g1.size, g2.size)
+    let moved = 0
+    for (const px of g2) if (!g1.has(px)) moved++
+    for (const px of g1) if (!g2.has(px)) moved++
+    expect(maxGreen, 'trace-pulse green signal present').toBeGreaterThan(20)
+    expect(
+      moved,
+      `green signal animates (g1=${g1.size}, g2=${g2.size}, moved=${moved})`
+    ).toBeGreaterThan(Math.max(5, maxGreen * 0.1))
   })
 })

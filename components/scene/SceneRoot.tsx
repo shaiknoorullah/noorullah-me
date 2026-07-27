@@ -84,7 +84,9 @@ export default function SceneRoot(): JSX.Element {
       removeEventListener('resize', rebuild)
       ScrollTrigger.removeEventListener('refresh', rebuild)
       removeEventListener('pointermove', onPointer)
-      THREE.DefaultLoadingManager.onProgress = () => {}
+      THREE.DefaultLoadingManager.onProgress = () => {
+        /* released: island unmounted */
+      }
       offTempus?.()
       lenisInstance?.destroy()
     }

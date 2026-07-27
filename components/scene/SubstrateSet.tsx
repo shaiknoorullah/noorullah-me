@@ -59,6 +59,7 @@ import { LANES } from '../../lib/scene/anchors.generated'
 import type { Director } from '../../lib/scene/director'
 import { loadStudioEnvironment } from '../../lib/scene/environment'
 import {
+  applyTracePulse,
   createComponentMaterial,
   createDieSiliconMaterial,
   createFloorMaterial,
@@ -67,6 +68,7 @@ import {
   createGraniteMaterial,
   createIhsMaterial,
   createSolderMaskMaterial,
+  type TracePulseHandle,
 } from '../../lib/scene/materials'
 import {
   BASIS_PATH,
@@ -141,6 +143,7 @@ export function SubstrateSet({
   )
 
   const pulseHead = useRef<THREE.Mesh | null>(null)
+  const pulseHandles = useRef<TracePulseHandle[]>([])
 
   /* Override materials + shadow flags by the GLB's material contract (see
      deviation #2 above). The trace-mask courier (emission slot) is stashed
@@ -167,7 +170,12 @@ export function SubstrateSet({
         case 'mt_solder_traced': {
           const m = mats.solder.clone()
           if (src.aoMap) m.aoMap = src.aoMap
-          if (src.emissiveMap) o.userData.traceMask = src.emissiveMap
+          if (src.emissiveMap) {
+            o.userData.traceMask = src.emissiveMap
+            // SPEC §5.1: the pulse system keys strictly on the per-mesh
+            // courier (plan self-review note 10)
+            pulseHandles.current.push(applyTracePulse(m, src.emissiveMap))
+          }
           o.material = m
           o.castShadow = true
           o.receiveShadow = true
@@ -203,6 +211,12 @@ export function SubstrateSet({
     // bakes the correct, final shadow map exactly once; WebGLShadowMap
     // resets needsUpdate to false immediately after that single render.
     gl.shadowMap.needsUpdate = true
+
+    const handles = pulseHandles.current
+    return () => {
+      for (const h of handles) h.dispose()
+      handles.length = 0
+    }
   }, [gltf, mats, gl])
 
   /* The pulse-head: a small emissive sphere riding lane 0 — the GodRays sun
@@ -299,6 +313,10 @@ export function SubstrateSet({
 
   useFrame((st) => {
     const t = REDUCED ? 0 : st.clock.elapsedTime
+    for (const h of pulseHandles.current) {
+      h.setTime(t)
+      h.setBoost(director.pulseBoost)
+    }
     // the head commutes lane 0 at the primary lane's speed (0.05/s = 20s lap)
     if (headMesh.visible) {
       const head = (t * 0.05) % 1
