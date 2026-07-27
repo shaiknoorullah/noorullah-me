@@ -16,6 +16,7 @@ import * as THREE from 'three'
 import { Director } from '../../lib/scene/director'
 import { detectTier } from '../../lib/scene/quality'
 import { quality, REDUCED } from '../../lib/scene/store'
+import { DustField } from './DustField'
 import { Effects } from './Effects'
 import { Rig } from './Rig'
 import { SubstrateSet } from './SubstrateSet'
@@ -114,6 +115,7 @@ export default function SceneRoot(): JSX.Element {
         <color attach="background" args={[0x000000]} />
         <fogExp2 attach="fog" args={[0x000000, 0.028]} />
         <SubstrateSet director={director} onSun={setSun} />
+        <DustField />
         {ready && <Rig director={director} />}
         <Effects director={director} sun={sun} />
       </Suspense>
