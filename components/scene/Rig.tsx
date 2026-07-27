@@ -63,8 +63,12 @@ export function Rig({ director }: { director: Director }) {
     if (scene.fog instanceof THREE.FogExp2)
       scene.fog.density = director.fogDensity
 
-    // adaptive DPR: EMA of fps, 2.5s sustained <50 steps down, >58 steps up
-    if (rawDt > 0) {
+    // adaptive DPR: EMA of fps, 2.5s sustained <50 steps down, >58 steps up.
+    // Only on tiers whose starting DPR is above the ladder floor — low and
+    // failsafe are PINNED at 1 (Task 22 review: the ladder's 1.25 floor
+    // would RAISE dpr on the weakest hardware, and a fast low-tier device
+    // must not be pushed past its deliberate [1,1] ceiling)
+    if (rawDt > 0 && dpr.current > 1) {
       fpsEma.current = fpsEma.current * 0.95 + (1 / rawDt) * 0.05
       const now = st.clock.elapsedTime
       if (fpsEma.current < 50) {

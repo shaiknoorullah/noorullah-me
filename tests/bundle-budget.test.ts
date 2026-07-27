@@ -19,13 +19,17 @@ describe('adaptive DPR ladder (DESIGN §11.3)', () => {
   })
 })
 
-describe('island bundle budget (SPEC §7: < 250KB gz)', () => {
+describe('bundle budget (P8 GO: initial JS < 250KB gz, island reported)', () => {
   it('passes the bundle gate after a build', () => {
     const out = execFileSync('node', ['scripts/check-bundle.mjs'], {
       encoding: 'utf8',
     })
     const report = JSON.parse(out)
     expect(report.ok).toBe(true)
-    expect(report.gzipBytes).toBeLessThan(250 * 1024)
+    // the GATED metric (director's P8 GO): initial-load JS
+    expect(report.initialLoadBytes).toBeLessThan(250 * 1024)
+    // the island is deferred (dynamic ssr:false) — measured + reported
+    // for the director's ruling, not gated
+    expect(report.gzipBytes).toBeGreaterThan(0)
   })
 })

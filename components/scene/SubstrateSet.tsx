@@ -167,7 +167,11 @@ export function SubstrateSet({
         new THREE.MeshBasicMaterial({
           map: src.map ?? null,
           aoMap: src.aoMap ?? null,
-          color: 0xffffff,
+          // 5 of 8 GLB materials are baseColorFactor-only (no texture) —
+          // src.color carries that factor; textured ones keep white so
+          // the map is unscaled (Task 22 review: 0xffffff rendered the
+          // floor/granite/gold/ihs/component districts WHITE on failsafe)
+          color: src.color,
         })
       switch (src.name) {
         case 'mt_floor':

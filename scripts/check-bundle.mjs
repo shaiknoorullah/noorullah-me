@@ -101,7 +101,11 @@ const initialLoadBytes =
     .reduce((sum, f) => sum + f.gzipBytes, 0)
 
 const report = {
-  ok: island.gzipBytes < 250 * 1024,
+  // P8 GO (authoritative, supersedes the brief's island≤250KB): the
+  // budget gates INITIAL JS <250KB gz; the island is deferred behind
+  // dynamic(ssr:false) and is measured + reported, not gated (director
+  // rules on its size with the numbers in hand).
+  ok: initialLoadBytes < 250 * 1024,
   gzipBytes: island.gzipBytes,
   file: island.file,
   initialLoadBytes,
