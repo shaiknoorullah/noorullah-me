@@ -33,6 +33,7 @@ export interface StratumCfg {
   sizeMin: number
   sizeMax: number
   opacity: number
+  zoneCull?: boolean
   speedMax: number
 }
 
@@ -60,19 +61,26 @@ export function dustStrata(low: boolean): StratumCfg[] {
     far,
     mid,
     {
+      // director gate 2026-07-27: near motes halved (size + alpha) — the
+      // corn model is bigger BUT softer AND dimmer; the board is the
+      // subject, dust is air
       count: 60,
       box: [8, 4, 8],
       center: [4, 2.4, 3.4],
-      sizeMin: 0.3,
-      sizeMax: 0.8,
-      opacity: 0.075,
+      sizeMin: 0.15,
+      sizeMax: 0.4,
+      opacity: 0.04,
       speedMax: 0.25,
+      zoneCull: true,
     },
   ]
 }
 
 const VERT = /* glsl */ `
 attribute float aSize;
+uniform vec4 uContentZone;
+uniform float uZoneCull;
+varying float vZoneFade;
 attribute float aPhase;
 attribute float aSpeed;
 attribute float aTint;
@@ -85,6 +93,7 @@ varying float vTwinkle;
 varying vec3 vWorld;
 varying float vDist;
 varying float vDefocus;
+varying float vZoneFade;
 
 // ashima 3D simplex noise (compact)
 vec4 permute(vec4 x) { return mod(((x * 34.0) + 1.0) * x, 289.0); }
@@ -152,6 +161,13 @@ void main() {
   gl_PointSize = size * uSizeScale / max(-mv.z, 0.001);
   vTint = aTint;
   gl_Position = projectionMatrix * mv;
+  // screen-plan §8.9: near motes fade to 0 over the content-safe zone
+  vec2 ndc = gl_Position.xy / max(gl_Position.w, 1e-4);
+  float inX = smoothstep(uContentZone.x - 0.15, uContentZone.x, ndc.x)
+            * (1.0 - smoothstep(uContentZone.z, uContentZone.z + 0.15, ndc.x));
+  float inY = smoothstep(uContentZone.y - 0.15, uContentZone.y, ndc.y)
+            * (1.0 - smoothstep(uContentZone.w, uContentZone.w + 0.15, ndc.y));
+  vZoneFade = 1.0 - uZoneCull * inX * inY;
 }
 `
 
@@ -180,7 +196,7 @@ void main() {
   vec2 c = gl_PointCoord - 0.5;
   float df = polygonDf(c) * 2.0;
   // edge softness scales with defocus: in-focus crisp, out-of-focus soft
-  float disc = smoothstep(0.5, 0.5 - mix(0.05, 0.3, vDefocus), df);
+  float disc = smoothstep(0.5, 0.5 - mix(0.06, 0.45, vDefocus), df);
   // brightness boost only inside the key shaft (hyperfocus motif)
   vec3 rel = vWorld - uConeOrigin;
   float d = length(rel);
@@ -189,7 +205,7 @@ void main() {
   float fade = smoothstep(0.25, 1.1, vDist) * (1.0 - smoothstep(22.0, 32.0, vDist));
   vec3 col = mix(uBone, uSignal, vTint);
   // out-of-focus = dimmer
-  float a = disc * uOpacity * vTwinkle * fade * mix(1.0, 0.4, vDefocus) * (1.0 + cone * 1.6);
+  float a = disc * uOpacity * vTwinkle * fade * mix(1.0, 0.22, vDefocus) * (1.0 + cone * 1.6) * vZoneFade;
   gl_FragColor = vec4(col, a);
 }
 `
@@ -233,6 +249,10 @@ function buildStratum(cfg: StratumCfg) {
       uConeAxis: { value: coneAxis },
       uConeCos: { value: Math.cos(0.55) },
       uConeLen: { value: KEY_POS.distanceTo(KEY_TGT) },
+      // hero wordmark occupies the lower-left content zone (NDC rect
+      // x0,y0,x1,y1); per-act zones arrive with the Task 19/20 DOM
+      uContentZone: { value: new THREE.Vector4(-1.0, -1.0, 0.15, 0.05) },
+      uZoneCull: { value: cfg.zoneCull ? 1 : 0 },
     },
     vertexShader: VERT,
     fragmentShader: FRAG,

@@ -26,6 +26,9 @@ export type ShotAnchor =
 
 export interface Shot {
   at: ShotAnchor
+  /** per-act exposure offset in stops (director gate 2026-07-27: runtime
+      per-act exposure is the Director's knob, recorded here as data) */
+  exp?: number
   pos: [number, number, number]
   tgt: [number, number, number]
   bloom: number
@@ -166,6 +169,7 @@ export function buildShots(): Shot[] {
     // transit map, the socket as the central interchange
     {
       at: ['sec', 'evidence'],
+      exp: 0.5,
       pos: [S[0] + 0.4, 13.5, S[2] + 0.6],
       tgt: [S[0], SURFACE_Y, S[2]],
       bloom: 0.55,
@@ -317,6 +321,7 @@ export interface SampleResult {
   ap: number
   fov: number
   temp: number
+  exp: number
   sat: number
   fog: number
   roll: number
@@ -360,6 +365,7 @@ export function sampleKeys(
     ap: L(a.ap, b.ap, t),
     fov: L(a.fov, b.fov, t),
     temp: L(a.temp ?? 0, b.temp ?? 0, t),
+    exp: L(a.exp ?? 0, b.exp ?? 0, t),
     sat: L(a.sat ?? 1, b.sat ?? 1, t),
     fog: L(a.fog ?? 0.03, b.fog ?? 0.03, t),
     roll: L(a.roll ?? 0, b.roll ?? 0, t),
@@ -391,6 +397,7 @@ export class Director {
     pos: [8.2, 2.0, 5.4],
     tgt: [-1.2, 1.0, 0.4],
     bloom: 0.45,
+    exp: 0,
     ap: 1,
     fov: 20,
     temp: 0.1,
@@ -414,6 +421,8 @@ export class Director {
   ramp = 0
   focusDist = 7.2
   temp = 0.1
+  /** per-act exposure offset (stops), lerped from the shot table */
+  exp = 0
   sat = 1.0
   fogDensity = 0.028
   roll = 0
@@ -480,6 +489,7 @@ export class Director {
     this.shot.ap = s.ap
     this.shot.fov = s.fov
     this.shot.temp = s.temp
+    this.shot.exp = s.exp
     this.shot.sat = s.sat
     this.shot.fog = s.fog
     this.shot.roll = s.roll
@@ -574,6 +584,7 @@ export class Director {
     // grade springs
     const kG = 1 - Math.exp(-dt * 2.8)
     this.temp += (s.temp - this.temp) * kG
+    this.exp += (s.exp - this.exp) * kG
     this.sat += (s.sat - this.sat) * kG
     this.fogDensity += (s.fog - this.fogDensity) * kG
     this.vignette += (s.vig - this.vignette) * kG

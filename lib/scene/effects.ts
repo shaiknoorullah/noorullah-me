@@ -244,12 +244,12 @@ export class GradeEffect extends Effect {
      the blue curve mixes its two atlas rows GPU-side). The Director's own
      continuous temp/sat (shot-table authored) take precedence over the act
      table when the caller sets them after this. */
-  applyActBlend(blend: ActBlend): void {
+  applyActBlend(blend: ActBlend, expOffset = 0): void {
     const a = GRADE_ACTS[blend.a]
     const b = GRADE_ACTS[blend.b]
     if (!(a && b)) return
     const mix = (x: number, y: number): number => x + (y - x) * blend.t
-    this.setU('uExp', mix(a.exp, b.exp))
+    this.setU('uExp', mix(a.exp, b.exp) + expOffset)
     this.setU('uContrast', mix(a.contrast, b.contrast))
     this.setU('uPivot', mix(a.pivot, b.pivot))
     this.setU('uFloor', mix(a.floor, b.floor))

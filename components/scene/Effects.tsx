@@ -30,7 +30,7 @@ import {
   ToneMappingMode,
   VignetteEffect,
 } from 'postprocessing'
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { Director } from '../../lib/scene/director'
 import { GradeEffect, resolveActBlend } from '../../lib/scene/effects'
@@ -49,9 +49,25 @@ export function Effects({
 
   const smaa = useMemo(() => new SMAAEffect(), [])
 
+  // GodRays sun PROXY (execution-caught at the act-3 top-down, twice):
+  // when the real pulse-head projects edge-on/behind the camera the
+  // effect's screen-space math goes NaN and — because NaN ignores blend
+  // opacity — wipes the whole frame. The proxy follows the head while its
+  // projection is safe and parks far along the camera forward axis
+  // (subpixel, shaftless) when it is not, so the projection is ALWAYS
+  // finite.
+  const sunProxy = useMemo(() => {
+    const m = new THREE.Mesh(
+      new THREE.SphereGeometry(0.045, 12, 8),
+      new THREE.MeshBasicMaterial({ color: 0xa4eb53 })
+    )
+    m.frustumCulled = false
+    return m
+  }, [])
+
   const godRays = useMemo(() => {
     if (!(high && sun) || REDUCED) return null
-    return new GodRaysEffect(camera, sun, {
+    return new GodRaysEffect(camera, sunProxy, {
       density: 0.9,
       decay: 0.93,
       weight: 0.25,
@@ -60,7 +76,16 @@ export function Effects({
       kernelSize: KernelSize.SMALL,
       blur: true,
     })
-  }, [camera, sun, high])
+  }, [camera, sun, sunProxy, high])
+
+  const scene = useThree((s) => s.scene)
+  useEffect(() => {
+    if (!godRays) return
+    scene.add(sunProxy)
+    return () => {
+      scene.remove(sunProxy)
+    }
+  }, [godRays, scene, sunProxy])
 
   const dof = useMemo(() => {
     if (lean || REDUCED) return null
@@ -109,14 +134,47 @@ export function Effects({
     []
   )
 
+  // keys only change in buildKeys() — cache the section mapping by array
+  // identity instead of rebuilding 14 objects per frame (opus review)
+  const sectionsCache = useRef<{
+    keys: unknown
+    list: { p: number; section: string }[]
+  }>({ keys: null, list: [] })
+
+  const sunScratch = useRef(new THREE.Vector3())
+  const sunScratch2 = useRef(new THREE.Vector3())
+
   useFrame(() => {
+    if (godRays && sun) {
+      const v = sunScratch.current
+      sun.getWorldPosition(v)
+      // view-space depth: negative = in front of the camera
+      const vz = sunScratch2.current
+        .copy(v)
+        .applyMatrix4(camera.matrixWorldInverse).z
+      if (vz < -1.0) {
+        sunProxy.position.copy(v)
+      } else {
+        // park: far along the camera forward axis — projects to center,
+        // subpixel, no shafts, always finite
+        camera.getWorldDirection(sunScratch2.current)
+        sunProxy.position
+          .copy(camera.position)
+          .addScaledVector(sunScratch2.current, 120)
+      }
+    }
     // grade acts through the Director's keys (GRADE.md §2 table)
-    const sections = director.keys.map((k) => ({
-      p: k.p,
-      section: typeof k.at[1] === 'string' ? k.at[1] : 'contact',
-    }))
-    const blend = resolveActBlend(sections, scrollState.p)
-    grade.applyActBlend(blend)
+    if (sectionsCache.current.keys !== director.keys) {
+      sectionsCache.current = {
+        keys: director.keys,
+        list: director.keys.map((k) => ({
+          p: k.p,
+          section: typeof k.at[1] === 'string' ? k.at[1] : 'contact',
+        })),
+      }
+    }
+    const blend = resolveActBlend(sectionsCache.current.list, scrollState.p)
+    grade.applyActBlend(blend, director.exp)
     // the Director's continuous shot-table temp/sat own the final word
     grade.temp = director.temp
     grade.sat = director.sat

@@ -23,7 +23,7 @@ export const FILL_POS = new THREE.Vector3(6, SURFACE_Y + 4.5, -4)
 export const RIM_POS = new THREE.Vector3(2.5, SURFACE_Y + 1.8, 9.5)
 
 export const KEY_COLOR = 0xfff6ec
-export const FILL_COLOR = 0x3552e8
+export const FILL_COLOR = 0x8f9fd8 // desat toward white: pure #3552E8 returned saturated blue specular on the glossy cluster (opus review + director gate)
 export const RIM_COLOR = 0xff6b1a
 export const SIGNAL = 0xa4eb53
 export const BONE = 0xf2f2f5

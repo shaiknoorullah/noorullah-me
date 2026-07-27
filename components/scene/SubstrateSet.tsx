@@ -358,8 +358,8 @@ export function SubstrateSet({
         ref={rim}
         position={RIM_POS.toArray()}
         color={RIM_COLOR}
-        intensity={90}
-        angle={0.55}
+        intensity={50}
+        angle={0.38}
         penumbra={1}
         decay={2}
       />
