@@ -33,5 +33,8 @@ for f in out/lightmap_*.png out/curvature_*.png out/bentnorm_*.png; do
   case "$f" in *_raw.png) ;; *) cp "$f" "$ASSETS/lightstory/" ;; esac
 done
 
+# runtime grade table from the locked acts.json (GRADE.md contract)
+python3 gen_grade_ts.py
+
 node validate.mjs "$ASSETS/substrate.glb"
 echo "PIPELINE OK"
