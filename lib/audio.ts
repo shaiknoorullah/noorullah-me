@@ -49,6 +49,15 @@ export class AudioEngine {
   private ctx: AudioContext | null = null
   private master: GainNode | null = null
   private bedGain: GainNode | null = null
+  /* Director hard requirement (P6 verdict): muffle owns a separate gain
+     node in series with setAct's scheduled ramps — no shared .value
+     writes. Chain: bed source -> bedGain (setAct's scheduled ramps) ->
+     muffleGain (muffle's rAF-driven multiplier) -> lowpass -> master.
+     muffleCurve() still reports the net 0.8 -> 0.3 overall-volume
+     semantics its unit tests pin; since bedGain rests at BED_GAIN (0.8),
+     muffleGain sweeps curve.gain / BED_GAIN (1.0 -> 0.375) to reproduce
+     that exact net curve without ever touching bedGain.gain. */
+  private muffleGain: GainNode | null = null
   private lowpass: BiquadFilterNode | null = null
   private buffers = new Map<string, AudioBuffer>()
   private muffleStart: number | null = null
@@ -80,9 +89,12 @@ export class AudioEngine {
     this.lowpass = ctx.createBiquadFilter()
     this.lowpass.type = 'lowpass'
     this.lowpass.frequency.value = MUFFLE_FREQ_HI
+    this.muffleGain = ctx.createGain()
+    this.muffleGain.gain.value = 1
     this.bedGain = ctx.createGain()
     this.bedGain.gain.value = 0
-    this.bedGain.connect(this.lowpass)
+    this.bedGain.connect(this.muffleGain)
+    this.muffleGain.connect(this.lowpass)
     this.lowpass.connect(this.master)
     this.master.connect(ctx.destination)
     if (ctx.state === 'suspended')
@@ -134,7 +146,9 @@ export class AudioEngine {
     )
   }
 
-  /** Overlay open: sweep lowpass 22kHz→200Hz + volume 0.8→0.3, 6s expo.out. */
+  /** Overlay open: sweep lowpass 22kHz→200Hz + volume 0.8→0.3, 6s expo.out.
+      Drives muffleGain (not bedGain) so this never races setAct's scheduled
+      ramps on the same param (director hard requirement, P6 verdict). */
   muffle(on: boolean): void {
     if (!this.ctx) return
     this.muffleDir = on ? 'in' : 'out'
@@ -142,7 +156,7 @@ export class AudioEngine {
     cancelAnimationFrame(this.raf)
     const step = () => {
       if (
-        !(this.ctx && this.lowpass && this.bedGain) ||
+        !(this.ctx && this.lowpass && this.muffleGain) ||
         this.muffleStart === null
       )
         return
@@ -154,7 +168,8 @@ export class AudioEngine {
       const to = this.muffleDir === 'in' ? muffleCurve(1) : muffleCurve(0)
       const k = t >= 1 ? 1 : 1 - 2 ** (-10 * t)
       this.lowpass.frequency.value = from.freq + (to.freq - from.freq) * k
-      this.bedGain.gain.value = from.gain + (to.gain - from.gain) * k
+      const gain = from.gain + (to.gain - from.gain) * k
+      this.muffleGain.gain.value = gain / BED_GAIN
       if (t < 1) this.raf = requestAnimationFrame(step)
     }
     step()

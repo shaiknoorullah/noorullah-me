@@ -1,12 +1,22 @@
 // Scene module state — mutable, read per-frame by the Director.
 //
 // Plain objects for 60Hz frame-driver access (not React state).
-// Ported minimally from v2/site/src/lib/store.ts (statementState excluded per YAGNI).
+// Ported minimally from v2/site/src/lib/store.ts.
 
 import type { QualityTier } from './quality'
 
 /** normalized page progress 0..1 + smoothed velocity, written by the scroll driver, read per-frame by the Director */
 export const scrollState = { p: 0, v: 0 }
+
+/* SDF statement text state (DESIGN §10.3). Written by the statement
+   ScrollTrigger in choreography.ts, consumed per frame by the in-canvas
+   statement text. `progress` is the pin scrub 0..1, `vis` the visibility
+   envelope (0 at the window edges). Ported from v2/site/src/lib/store.ts
+   (Task 1 dropped it "per YAGNI" — Task 20 needs it for the statement pin). */
+export const statementState = {
+  progress: 0,
+  vis: 0,
+}
 
 export const quality: { tier: QualityTier } = { tier: 'high' }
 

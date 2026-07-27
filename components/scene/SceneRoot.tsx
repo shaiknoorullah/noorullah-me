@@ -10,9 +10,11 @@ import { Canvas } from '@react-three/fiber'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
+import Snap from 'lenis/snap'
 import { type JSX, Suspense, useEffect, useMemo, useState } from 'react'
 import Tempus from 'tempus'
 import * as THREE from 'three'
+import { initDomChoreography } from '../../lib/choreography'
 import { Director } from '../../lib/scene/director'
 import { detectTier } from '../../lib/scene/quality'
 import { quality, REDUCED } from '../../lib/scene/store'
@@ -43,19 +45,35 @@ export default function SceneRoot(): JSX.Element {
 
     let lenisInstance: Lenis | null = null
     let offTempus: (() => void) | null = null
+    let snap: Snap | null = null
     if (!REDUCED) {
       // heavier lerp 0.085 per DESIGN §10.6; tempus drives the RAF
       const lenis = new Lenis({ lerp: 0.085, smoothWheel: true })
       lenisInstance = lenis
       lenis.on('scroll', ScrollTrigger.update)
       offTempus = Tempus.add((time: number) => lenis.raf(time * 1000)) ?? null
+      // magnetic proximity snap at act boundaries (DESIGN §10.6) — the
+      // statement + principles pinned ranges own their own scrub and are
+      // deliberately excluded from the anchor list below
+      snap = new Snap(lenis, {
+        type: 'proximity',
+        debounce: 120,
+        duration: 1.1,
+        easing: (t: number) => (t >= 1 ? 1 : 1 - 2 ** (-10 * t)),
+      })
     }
 
-    director.buildKeys()
+    // choreography first (pins change layout), then refresh so triggers
+    // settle against final layout, then buildKeys() resolves shot anchors
+    // against that settled layout (Task 20; ordering per the reference
+    // Stage.tsx and this task's brief)
+    const teardownDom = initDomChoreography(lenisInstance, director)
     ScrollTrigger.refresh()
+    director.buildKeys()
 
     // 'refresh' fires with pin spacers applied — buildKeys() re-resolves the
-    // shot anchors against post-refresh layout. It must NOT call
+    // shot anchors against post-refresh layout, and (Task 20) the snap
+    // anchors land where sections actually arrive. It must NOT call
     // ScrollTrigger.refresh() itself: rebuild is also registered as a
     // 'refresh' listener below, and refresh() dispatches its own 'refresh'
     // event at its tail (gsap/ScrollTrigger.js), so calling it from inside
@@ -63,8 +81,20 @@ export default function SceneRoot(): JSX.Element {
     // call stack). Reference (v2/site/src/components/scene/Stage.tsx
     // ~85-105) keeps refresh() calls outside rebuild — only the initial call
     // above and the fonts.ready call below trigger it.
+    let snapOffs: Array<() => void> = []
     const rebuild = () => {
       director.buildKeys()
+      if (snap) {
+        for (const off of snapOffs) off()
+        snapOffs = [snap.add(0)]
+        for (const id of ['work', 'evidence', 'about', 'writing', 'contact']) {
+          const el = document.getElementById(id)
+          if (!el) continue
+          snapOffs.push(
+            snap.add(el.getBoundingClientRect().top + (window.scrollY || 0))
+          )
+        }
+      }
     }
     addEventListener('resize', rebuild)
     ScrollTrigger.addEventListener('refresh', rebuild)
@@ -90,6 +120,9 @@ export default function SceneRoot(): JSX.Element {
       THREE.DefaultLoadingManager.onProgress = () => {
         /* released: island unmounted */
       }
+      for (const off of snapOffs) off()
+      snap?.destroy()
+      teardownDom()
       offTempus?.()
       lenisInstance?.destroy()
     }
