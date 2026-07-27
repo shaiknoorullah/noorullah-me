@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { adaptiveDprStep } from '../components/scene/Rig'
 
@@ -20,7 +21,14 @@ describe('adaptive DPR ladder (DESIGN §11.3)', () => {
 })
 
 describe('bundle budget (P8 GO: initial JS < 250KB gz, island reported)', () => {
-  it('passes the bundle gate after a build', () => {
+  it('passes the bundle gate after a build', (ctx) => {
+    // hermetic on a fresh checkout: the gate measures build output — skip
+    // (with a message) when none exists rather than failing a logic-free
+    // test (final review, Surface 4). CI must build before testing.
+    if (!(existsSync('.next/static/chunks') || existsSync('out/_next'))) {
+      ctx.skip()
+      return
+    }
     const out = execFileSync('node', ['scripts/check-bundle.mjs'], {
       encoding: 'utf8',
     })

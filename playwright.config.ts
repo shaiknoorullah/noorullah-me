@@ -61,6 +61,11 @@ export default defineConfig({
     // actually run on this host.
     {
       name: 'chromium-gpu',
+      // scoped to the act-screenshot spec: it is the only spec this
+      // project adds value for, and it carries the software-renderer
+      // self-skip. scene.spec.ts has no such guard and would false-fail
+      // on a black-rendering GPU host (final review, Surface 3).
+      testMatch: /acts\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: {
