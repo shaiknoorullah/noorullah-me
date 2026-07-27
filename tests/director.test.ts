@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { SOCKET_POS } from '../lib/scene/anchors.generated'
 import {
   buildShots,
@@ -9,6 +9,7 @@ import {
   resolveAnchorProgress,
   sampleKeys,
 } from '../lib/scene/director'
+import { sessionState } from '../lib/scene/store'
 
 type ResolvedShot = ReturnType<typeof buildShots>[number] & { p: number }
 
@@ -96,6 +97,10 @@ describe('shot table (SPEC §4)', () => {
 })
 
 describe('springs', () => {
+  afterEach(() => {
+    sessionState.entered = false
+  })
+
   it('reduced motion snaps to the sampled shot in one update', () => {
     const d = new Director(true)
     d.keys = keys()
@@ -118,6 +123,41 @@ describe('springs', () => {
     expect(d.diveT).toBe(0)
     d.update(cam, pEnd + 0.01, 0, 1 / 60, 1, false)
     expect(d.diveT).toBe(1)
+  })
+
+  it('intro dolly is entry-gated: frozen until entered, plays after (P5 ruling)', () => {
+    // sessionState is a shared module singleton — reset in afterEach below
+    sessionState.entered = false
+    const d = new Director(false)
+    d.keys = keys()
+    const cam = new THREE.PerspectiveCamera(24, 16 / 9, 0.1, 140)
+    const settle = () => {
+      for (let i = 0; i < 400; i++) d.update(cam, 0, 0, 1 / 30, i / 30, false)
+    }
+    const hero = sampleKeys(d.keys, 0)
+    // veil up: the dolly timer must not advance — the camera settles onto
+    // the PRE-dolly pose (hero shot + z 1.6 / y 0.3 pullback), forever
+    settle()
+    expect(d.pos.z).toBeCloseTo(hero.pos[2] + 1.6, 1)
+    expect(d.pos.y).toBeCloseTo(hero.pos[1] + 0.3, 1)
+    // CLICK TO ENTER: the 6s dolly plays out and the offset fully clears
+    sessionState.entered = true
+    settle()
+    expect(d.pos.z).toBeCloseTo(hero.pos[2], 1)
+    expect(d.pos.y).toBeCloseTo(hero.pos[1], 1)
+  })
+
+  it('intro dolly is skipped when entering past the hero act', () => {
+    sessionState.entered = false
+    const d = new Director(false)
+    d.keys = keys()
+    const cam = new THREE.PerspectiveCamera(24, 16 / 9, 0.1, 140)
+    // user scrolled to act 2 behind the veil: no pre-dolly offset may
+    // survive there (the dolly belongs to the hero framing only)
+    for (let i = 0; i < 400; i++) d.update(cam, 0.3, 0, 1 / 30, i / 30, false)
+    const s = sampleKeys(d.keys, 0.3)
+    expect(d.pos.z).toBeCloseTo(s.pos[2], 1)
+    expect(d.pos.y).toBeCloseTo(s.pos[1], 1)
   })
 
   it('riseT re-forms the board over the finale pull-back, after the dive', () => {

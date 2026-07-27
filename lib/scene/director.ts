@@ -529,10 +529,13 @@ export class Director {
     // ACT 0 intro: slow 6s dolly-in (SPEC §4: 6s then breathing drift).
     // Entry-gated (P5 director ruling): the film's first move begins at
     // the loader reveal, never behind the veil — the dolly timer only
-    // advances once CLICK TO ENTER has fired.
+    // advances once CLICK TO ENTER has fired. The dolly belongs to the
+    // hero framing: a user who scrolled past act 0 behind the veil skips
+    // it (the offset must never play over a later act's shot).
     const shotPos = new THREE.Vector3(...s.pos)
     if (this.introT < 1) {
-      if (sessionState.entered) {
+      if (p > 0.1) this.introT = 1
+      else if (sessionState.entered) {
         this.introT = Math.min(1, this.introT + dt / 6)
       }
       const k = 1 - easeIO(this.introT)

@@ -68,7 +68,13 @@ export class AudioEngine {
       (window as unknown as { webkitAudioContext?: typeof AudioContext })
         .webkitAudioContext
     if (!Ctor) return
-    const ctx = new Ctor()
+    let ctx: AudioContext
+    try {
+      ctx = new Ctor()
+    } catch {
+      // construction can throw in exotic embeds — the site stays silent
+      return
+    }
     this.ctx = ctx
     this.master = ctx.createGain()
     this.lowpass = ctx.createBiquadFilter()
