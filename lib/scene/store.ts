@@ -10,6 +10,14 @@ export const scrollState = { p: 0, v: 0 }
 
 export const quality: { tier: QualityTier } = { tier: 'high' }
 
+/* Set once by the Loader's CLICK TO ENTER (Task 17); gates audio unlock
+   (Task 18) + scene reveal. Ported from the master plan
+   (v2/docs/superpowers/plans/2026-07-23-substrate-scene.md) — Task 1's
+   brief dropped it, but Task 17/18 both name it as the exact export. */
+export const sessionState = {
+  entered: false,
+}
+
 export const REDUCED =
   typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches

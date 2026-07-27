@@ -18,10 +18,14 @@
 //     top-level heading per WCAG / axe `heading-order`.
 //   - Status footer is a static placeholder for `<StatusLine>` (Phase 1, T2)
 //     and uses semantic `<footer role="contentinfo">` so axe `region` passes.
+//   - `<LoaderMount>` renders the boot-sequence veil (Task 17, SPEC §5.3)
+//     over everything else (`zIndex: 40`) until the forced dwell arms
+//     CLICK TO ENTER and the visitor clicks; it self-unmounts after that.
 
 import type { JSX } from 'react'
 import { Logo } from '../components/primitives/Logo'
 import { SceneIsland } from '../components/scene/SceneIsland'
+import { LoaderMount } from '../components/ui/LoaderMount'
 import { BIO_30W, STATUS_BUILDING, STATUS_LOCATION } from '../lib/bio'
 
 export default function HomePage(): JSX.Element {
@@ -38,6 +42,7 @@ export default function HomePage(): JSX.Element {
         background: 'transparent',
       }}
     >
+      <LoaderMount />
       <SceneIsland />
 
       <main
