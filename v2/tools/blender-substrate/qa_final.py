@@ -129,7 +129,12 @@ CAM_TGT = (sx - 3.4, sy + 1.0, 0.9)
 set_shot(0.25, 0.25, 1.3)
 set_haze(0.0004)
 shoot("01-hero-grazing", CAM_LOC, CAM_TGT, 90)
+# director ruling 2026-07-27: perpendicular view has no grazing Fresnel
+# loss, so the same wide lock reads ~2 stops hotter — top-down QA frame
+# takes EXP -0.6 (runtime: the Director owns per-act exposure, P3)
+set_shot(-0.6, 0.25, 1.3)
 shoot("02-topdown", (0, 0, 26.0), (0, 0, 0.55), 50)
+set_shot(0.25, 0.25, 1.3)
 
 # MACRO (base values: EXP +1.3, ceiling 0.7, haze 0.0008, ember x1.0)
 set_shot(1.3, 0.7, 1.0)
