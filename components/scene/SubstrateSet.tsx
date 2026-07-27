@@ -144,6 +144,8 @@ export function SubstrateSet({
 
   const pulseHead = useRef<THREE.Mesh | null>(null)
   const pulseHandles = useRef<TracePulseHandle[]>([])
+  const fadeMats = useRef<THREE.Material[]>([])
+  const boardObjs = useRef<THREE.Object3D[]>([])
 
   /* Override materials + shadow flags by the GLB's material contract (see
      deviation #2 above). The trace-mask courier (emission slot) is stashed
@@ -157,11 +159,15 @@ export function SubstrateSet({
         case 'mt_floor':
           o.material = mats.floor
           o.receiveShadow = true
+          fadeMats.current.push(o.material)
+          boardObjs.current.push(o)
           break
         case 'mt_granite':
           o.material = mats.granite
           o.castShadow = true
           o.receiveShadow = true
+          fadeMats.current.push(o.material)
+          boardObjs.current.push(o)
           break
         case 'mt_ihs':
           o.material = mats.ihs
@@ -179,11 +185,15 @@ export function SubstrateSet({
           o.material = m
           o.castShadow = true
           o.receiveShadow = true
+          fadeMats.current.push(m)
+          boardObjs.current.push(o)
           break
         }
         case 'mt_gold':
           o.material = mats.gold
           o.castShadow = true
+          fadeMats.current.push(o.material)
+          boardObjs.current.push(o)
           break
         case 'mt_component':
         case 'mt_darkmetal': {
@@ -191,6 +201,8 @@ export function SubstrateSet({
           if (src.aoMap) m.aoMap = src.aoMap
           o.material = m
           o.castShadow = true
+          fadeMats.current.push(m)
+          boardObjs.current.push(o)
           break
         }
         case 'mt_die':
@@ -316,6 +328,19 @@ export function SubstrateSet({
     for (const h of pulseHandles.current) {
       h.setTime(t)
       h.setBoost(director.pulseBoost)
+    }
+    // board dissolve: the set hands off to the re-formation (SPEC §5.2);
+    // the particles carry the eye through diveT 0.35..0.55
+    let fade = 1
+    if (director.diveT > 0.35) fade = 1 - (director.diveT - 0.35) / 0.2
+    if (director.diveT >= 0.55) fade = 0
+    fade = Math.max(0, fade)
+    for (const m of fadeMats.current) {
+      m.transparent = fade < 1
+      m.opacity = fade
+    }
+    for (const o of boardObjs.current) {
+      o.visible = fade > 0
     }
     // the head commutes lane 0 at the primary lane's speed (0.05/s = 20s lap)
     if (headMesh.visible) {
