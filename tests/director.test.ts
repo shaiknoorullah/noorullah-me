@@ -119,6 +119,26 @@ describe('springs', () => {
     d.update(cam, pEnd + 0.01, 0, 1 / 60, 1, false)
     expect(d.diveT).toBe(1)
   })
+
+  it('riseT re-forms the board over the finale pull-back, after the dive', () => {
+    const d = new Director(false)
+    d.keys = keys()
+    const cam = new THREE.PerspectiveCamera(24, 16 / 9, 0.1, 140)
+    const k = d.keys
+    const pDiveEnd = k.find((s) => s.tag === 'dive-end')!.p
+    const pStart = k.find((s) => s.tag === 'rise-start')!.p
+    const pEnd = k.find((s) => s.tag === 'rise-end')!.p
+    // the rise window sits entirely after the dive
+    expect(pStart).toBeGreaterThanOrEqual(pDiveEnd)
+    expect(pEnd).toBeGreaterThan(pStart)
+    d.update(cam, pStart - 0.01, 0, 1 / 60, 1, false)
+    expect(d.riseT).toBe(0)
+    d.update(cam, (pStart + pEnd) / 2, 0, 1 / 60, 1, false)
+    expect(d.riseT).toBeGreaterThan(0)
+    expect(d.riseT).toBeLessThan(1)
+    d.update(cam, pEnd + 0.01, 0, 1 / 60, 1, false)
+    expect(d.riseT).toBe(1)
+  })
 })
 
 describe('easing helpers', () => {

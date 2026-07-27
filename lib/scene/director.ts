@@ -50,8 +50,12 @@ export interface Shot {
   pulse?: number
   /** vignette darkness for the act */
   vig?: number
-  /** dive segment markers — exactly one of each, dive-start before dive-end */
-  tag?: 'dive-start' | 'dive-end'
+  /** dive/rise segment markers — at most one of each, in scroll order:
+      dive-start < dive-end < rise-start < rise-end. The rise pair marks
+      the board re-formation window for the finale pull-back (ACT 5/6 are
+      board-scale shots — the set must be back for "every district
+      answers") */
+  tag?: 'dive-start' | 'dive-end' | 'rise-start' | 'rise-end'
   p?: number
 }
 
@@ -233,6 +237,7 @@ export function buildShots(): Shot[] {
     },
     {
       at: ['pinEnd', 'principles'],
+      tag: 'rise-start',
       pos: [SD[0] + 1.5, -18, SD[2] + 5],
       tgt: [SD[0], -30, SD[2]],
       bloom: 0.5,
@@ -248,6 +253,7 @@ export function buildShots(): Shot[] {
     // ACT 5 — writing: back at board scale, gentle pull-back drift
     {
       at: ['sec', 'writing'],
+      tag: 'rise-end',
       pos: [3.5, 2.2, 7.0],
       tgt: [0.0, 1.0, 0.0],
       bloom: 0.5,
@@ -388,6 +394,9 @@ export class Director {
   hProgress = 0
   /** 0..1 through the Act-5 dive — DieDive + TransitionParticles read this */
   diveT = 0
+  /** 0..1 through the finale pull-back — SubstrateSet re-forms the board
+      over this window (ACT 5/6 are board-scale shots) */
+  riseT = 0
 
   private prinWin: [number, number] = [-1, -1]
   private focusPull = 0
@@ -508,6 +517,12 @@ export class Director {
     this.diveT =
       diveStart && diveEnd && diveEnd.p > diveStart.p
         ? clamp01((p - diveStart.p) / (diveEnd.p - diveStart.p))
+        : 0
+    const riseStart = this.keys.find((k) => k.tag === 'rise-start')
+    const riseEnd = this.keys.find((k) => k.tag === 'rise-end')
+    this.riseT =
+      riseStart && riseEnd && riseEnd.p > riseStart.p
+        ? clamp01((p - riseStart.p) / (riseEnd.p - riseStart.p))
         : 0
 
     // ACT 0 intro: slow 6s dolly-in (SPEC §4: 6s then breathing drift)

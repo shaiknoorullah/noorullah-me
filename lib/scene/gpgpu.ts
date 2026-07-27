@@ -40,7 +40,10 @@ export function sampleMaskPoints(
     }
   }
   const out = new Float32Array(count * 3)
-  const n = Math.max(1, lit.length / 2)
+  // all-dark mask: return the zero field rather than emitting NaN
+  // positions (lit[j] would be undefined)
+  if (lit.length === 0) return out
+  const n = lit.length / 2
   for (let i = 0; i < count; i++) {
     const j = Math.floor(rand() * n) * 2
     const u = (lit[j]! + 0.5) / img.width

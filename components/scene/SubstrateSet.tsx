@@ -298,6 +298,9 @@ export function SubstrateSet({
         depthWrite: false,
         opacity: 0.5 - i * 0.12,
       })
+      // base opacity retained so the dive dissolve can scale it (Task 14:
+      // fog cards fade with the board)
+      mat.userData.baseOpacity = mat.opacity
       const mesh = new THREE.Mesh(new THREE.PlaneGeometry(16, 10), mat)
       mesh.rotation.x = -Math.PI / 2
       mesh.position.set(x, 0.06 + i * 0.05, -0.5 + i * 0.8)
@@ -330,17 +333,28 @@ export function SubstrateSet({
       h.setBoost(director.pulseBoost)
     }
     // board dissolve: the set hands off to the re-formation (SPEC §5.2);
-    // the particles carry the eye through diveT 0.35..0.55
+    // the particles carry the eye through diveT 0.35..0.55. The board
+    // RE-FORMS over the finale pull-back (riseT: principles→writing) —
+    // ACT 5/6 are board-scale shots ("every district answers"). REDUCED
+    // pins both to the finale composition (board present, die awake),
+    // matching DieDive's REDUCED dive=1.
+    const diveVal = REDUCED ? 1 : director.diveT
+    const riseVal = REDUCED ? 1 : director.riseT
     let fade = 1
-    if (director.diveT > 0.35) fade = 1 - (director.diveT - 0.35) / 0.2
-    if (director.diveT >= 0.55) fade = 0
-    fade = Math.max(0, fade)
+    if (diveVal > 0.35) fade = 1 - (diveVal - 0.35) / 0.2
+    if (diveVal >= 0.55) fade = 0
+    const presence = Math.max(Math.max(0, fade), riseVal)
     for (const m of fadeMats.current) {
-      m.transparent = fade < 1
-      m.opacity = fade
+      m.transparent = presence < 1
+      m.opacity = presence
     }
     for (const o of boardObjs.current) {
-      o.visible = fade > 0
+      o.visible = presence > 0
+    }
+    for (const f of fogCards) {
+      const m = f.material as THREE.MeshBasicMaterial
+      m.opacity = (m.userData.baseOpacity as number) * presence
+      f.visible = presence > 0
     }
     // the head commutes lane 0 at the primary lane's speed (0.05/s = 20s lap)
     if (headMesh.visible) {

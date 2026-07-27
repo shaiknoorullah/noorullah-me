@@ -39,9 +39,22 @@ describe('sampleMaskPoints', () => {
     const b = sampleMaskPoints(img, 8, (u, v) => [u, 0, v], mulberry32(42))
     expect(Array.from(a)).toEqual(Array.from(b))
   })
+
+  it('returns a finite zero field for an all-dark mask (no NaN)', () => {
+    const dark = { data: new Uint8ClampedArray(4 * 4 * 4), width: 4, height: 4 }
+    const pts = sampleMaskPoints(dark, 8, (u, v) => [u, 1, v], mulberry32(3))
+    expect(pts).toHaveLength(8 * 3)
+    for (const v of pts) expect(v).toBe(0)
+  })
 })
 
 describe('sampleMeshSurfacePoints', () => {
+  it('returns a zero field when no meshes carry usable triangles', () => {
+    const pts = sampleMeshSurfacePoints([], 8, mulberry32(5))
+    expect(pts).toHaveLength(8 * 3)
+    for (const v of pts) expect(v).toBe(0)
+  })
+
   it('samples points on the mesh surface in world space', () => {
     // PlaneGeometry lies in the XY plane: after translation, points sit at
     // x∈[9,11], y∈[-41,-39], z=3
