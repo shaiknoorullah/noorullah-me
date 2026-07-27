@@ -10,16 +10,257 @@
    Bundle isolation: this component lives in the MAIN chunk, so it must not
    import three. SceneRoot (inside the island chunk) forwards
    THREE.DefaultLoadingManager progress as `substrate:progress` window
-   events carrying { loaded, total }. */
+   events carrying { loaded, total }.
 
-import { type JSX, useCallback, useEffect, useRef, useState } from 'react'
-import { DWELL_MS, isArmed, LOADER_COPY, loadProgress } from '../../lib/loader'
+   Title decode (SPEC §5.3, P5 review Fix 1): driven by load progress, not
+   time — "progress = loadingManager.onProgress × 1.05" scrubs a paused
+   GSAP timeline via tl.progress(). Built from the pure decode-engine
+   primitives in lib/decode.ts; DecodeText itself stays untouched (it's the
+   time-based, ScrollTrigger-fired section-heading component).
+
+   Status re-scramble (SPEC §5.3, P5 review Fix 2): a short periodic wave
+   re-scrambles a few characters of the status line, same 3-layer glyph
+   discipline (only opacity/glyph/color ever change). */
+
+import gsap from 'gsap'
+import {
+  type JSX,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
+import {
+  buildWindows,
+  charPhaseAt,
+  DECODE_DEFAULTS,
+  scrambleGlyph,
+} from '../../lib/decode'
+import {
+  DWELL_MS,
+  isArmed,
+  LOADER_COPY,
+  loadProgress,
+  resolveDoneAt,
+} from '../../lib/loader'
 import { REDUCED, sessionState } from '../../lib/scene/store'
-import { DecodeText } from './DecodeText'
 
 const E2E =
   typeof window !== 'undefined' &&
   new URLSearchParams(window.location.search).get('e2e') === '1'
+
+// Real gsap.timeline() return type, derived rather than reached for via the
+// ambient `gsap.core` type namespace — safe under an ES default import.
+type GsapTimeline = ReturnType<typeof gsap.timeline>
+
+// Capitalized so JSX resolves it at runtime rather than as a literal
+// intrinsic tag — same `Tag` device DecodeText.tsx uses so its per-char
+// aria-hidden spans can sit under one aria-label on the container without
+// tripping the generic-role aria-label lint (a plain `<div aria-label>`
+// isn't allowed by role, but the linter can't see through a dynamic tag).
+const Div = 'div'
+
+/* Progress-scrubbed title decode: per-char spans for LOADER_COPY.title on a
+   paused gsap.timeline whose onUpdate applies charPhaseAt per char — the
+   same 3-layer discipline as DecodeText (hidden / scramble / flash
+   #A4EB53 / settled bone; only opacity, glyph identity, and color ever
+   change). The timeline is exposed via `tlRef` so the progress effect below
+   can call tl.progress(Math.min(1, p)) on every 'substrate:progress' event.
+   Reduced motion (?e2e=1 or REDUCED): settles immediately, no timeline. */
+function LoaderTitle({
+  text,
+  tlRef,
+}: {
+  text: string
+  tlRef: { current: GsapTimeline | null }
+}): JSX.Element {
+  const root = useRef<HTMLDivElement | null>(null)
+  const chars = useMemo(() => text.split(''), [text])
+  const windows = useMemo(
+    () => buildWindows(chars.length, DECODE_DEFAULTS, Math.random),
+    [chars.length]
+  )
+
+  useEffect(() => {
+    const el = root.current
+    if (!el) return undefined
+    const spans = Array.from(el.querySelectorAll<HTMLElement>('[data-ch]'))
+
+    if (E2E || REDUCED) {
+      for (let i = 0; i < spans.length; i++) {
+        const span = spans[i]!
+        span.style.opacity = '1'
+        span.style.color = ''
+        span.textContent = chars[i]!
+      }
+      return undefined
+    }
+
+    let tick = 0
+    const apply = (t: number) => {
+      tick += 1
+      for (let i = 0; i < spans.length; i++) {
+        const span = spans[i]!
+        if (chars[i] === ' ') {
+          span.textContent = ' '
+          span.style.opacity = '1'
+          continue
+        }
+        const phase = charPhaseAt(t, windows[i]!)
+        if (phase === 'hidden') {
+          span.style.opacity = '0'
+        } else if (phase === 'scramble') {
+          span.style.opacity = '1'
+          span.style.color = 'var(--bone-1)'
+          span.textContent = scrambleGlyph(i, tick)
+        } else if (phase === 'flash') {
+          span.style.opacity = '1'
+          span.style.color = '#A4EB53'
+          span.textContent = chars[i]!
+        } else {
+          span.style.opacity = '1'
+          span.style.color = ''
+          span.textContent = chars[i]!
+        }
+      }
+    }
+
+    const state = { t: 0 }
+    const tl = gsap.timeline({ paused: true })
+    tl.to(state, {
+      t: 1,
+      duration: 1,
+      ease: 'none',
+      onUpdate: () => apply(state.t),
+    })
+    tlRef.current = tl
+    return () => {
+      tl.kill()
+      tlRef.current = null
+    }
+  }, [chars, windows, tlRef])
+
+  return (
+    <Div ref={root} className="loader-title" aria-label={text}>
+      {chars.map((c, i) => (
+        <span
+          // biome-ignore lint/suspicious/noArrayIndexKey: chars are static, non-unique, and never reorder — position is a stable identity here (DecodeText precedent)
+          key={i}
+          data-ch
+          aria-hidden="true"
+          style={{ opacity: E2E || REDUCED ? 1 : 0 }}
+        >
+          {c}
+        </span>
+      ))}
+    </Div>
+  )
+}
+
+/* Status re-scramble (SPEC §5.3, Fix 2): every ~2.4s a short ~0.4s wave
+   flips a few characters through scrambleGlyph before settling back to the
+   true text — one gsap-driven loop (repeat + repeatDelay), cleaned up on
+   unmount and stopped once the user enters (`active` flips false). Reduced
+   motion: static text, no scramble. Only glyph identity/color ever change
+   — no movement. */
+function LoaderStatus({
+  text,
+  active,
+}: {
+  text: string
+  active: boolean
+}): JSX.Element {
+  const root = useRef<HTMLDivElement | null>(null)
+  const chars = useMemo(() => text.split(''), [text])
+
+  useEffect(() => {
+    const el = root.current
+    if (!el || REDUCED || !active) return undefined
+    const spans = Array.from(el.querySelectorAll<HTMLElement>('[data-ch]'))
+    const eligible = chars.map((_, i) => i).filter((i) => chars[i] !== ' ')
+    let wave: number[] = []
+
+    const pickWave = () => {
+      const pool = eligible.slice()
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        const tmp = pool[i]!
+        pool[i] = pool[j]!
+        pool[j] = tmp
+      }
+      const count = Math.min(pool.length, 3 + Math.floor(Math.random() * 3))
+      wave = pool.slice(0, count)
+    }
+
+    let tick = 0
+    const state = { t: 0 }
+    const apply = () => {
+      tick += 1
+      const phase = charPhaseAt(state.t, { start: 0, end: 1 })
+      for (const i of wave) {
+        const span = spans[i]
+        if (!span) continue
+        if (phase === 'scramble') {
+          span.style.color = 'var(--bone-1)'
+          span.textContent = scrambleGlyph(i, tick)
+        } else if (phase === 'flash') {
+          span.style.color = '#A4EB53'
+          span.textContent = chars[i]!
+        } else {
+          span.style.color = ''
+          span.textContent = chars[i]!
+        }
+      }
+    }
+
+    const tween = gsap.to(state, {
+      t: 1,
+      duration: 0.4,
+      ease: 'none',
+      repeat: -1,
+      repeatDelay: 2,
+      onStart: pickWave,
+      onRepeat: pickWave,
+      onUpdate: apply,
+    })
+
+    return () => {
+      tween.kill()
+      // revert any glyph frozen mid-wave so a stopped/unmounting status
+      // line never shows scramble glyphs
+      for (const i of wave) {
+        const span = spans[i]
+        if (span) {
+          span.style.color = ''
+          span.textContent = chars[i]!
+        }
+      }
+    }
+  }, [chars, active])
+
+  return (
+    <Div
+      ref={root}
+      aria-live="polite"
+      aria-label={text}
+      style={{
+        marginTop: 'var(--s-4)',
+        fontSize: 'var(--t-xs)',
+        letterSpacing: '0.12em',
+        color: 'var(--bone-2)',
+        textTransform: 'uppercase',
+      }}
+    >
+      {chars.map((c, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: chars are static, non-unique, and never reorder — position is a stable identity here (DecodeText precedent)
+        <span key={i} data-ch aria-hidden="true">
+          {c}
+        </span>
+      ))}
+    </Div>
+  )
+}
 
 export function Loader({
   onEnter,
@@ -31,6 +272,7 @@ export function Loader({
   const [gone, setGone] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const veilRef = useRef<HTMLDivElement | null>(null)
+  const titleTlRef = useRef<GsapTimeline | null>(null)
 
   /* track loading progress (bridged from the island) + fonts; the dwell
      starts when both complete */
@@ -38,7 +280,7 @@ export function Loader({
     if (E2E || REDUCED) {
       setProgress(1)
       setArmed(true)
-      return
+      return undefined
     }
     let doneAt: number | null = null
     let fontsDone = false
@@ -53,22 +295,36 @@ export function Loader({
       ).detail
       lastLoaded = loaded
       lastTotal = total
-      setProgress(loadProgress(loaded, total))
+      const p = loadProgress(loaded, total)
+      setProgress(p)
+      // Fix 1 (P5 review): scrub the paused title timeline directly off
+      // load progress, on every 'substrate:progress' event.
+      titleTlRef.current?.progress(Math.min(1, p))
     }
     window.addEventListener('substrate:progress', onProg)
-    document.fonts?.ready.then(() => {
+    if (document.fonts) {
+      document.fonts.ready.then(() => {
+        fontsDone = true
+      })
+    } else {
+      // Fix 4 (P5 review): a missing document.fonts must never block
+      // arm-eligibility — treat it as fonts-done.
       fontsDone = true
-    })
+    }
 
     const tick = () => {
+      const now = performance.now()
       const p = loadProgress(lastLoaded, lastTotal)
       // fully-cached revisit: no progress events ever fire — treat 1.2s of
       // silence after mount as load-complete (dwell is the pacing anyway)
-      const silent = lastLoaded === 0 && performance.now() - mountAt > 1200
+      const silent = lastLoaded === 0 && now - mountAt > 1200
       if ((p >= 1 || silent) && fontsDone && doneAt === null) {
-        doneAt = performance.now()
+        doneAt = now
       }
-      if (isArmed(doneAt, performance.now(), DWELL_MS)) {
+      // Fix 3 (P5 review): a stalled load still forces arm-eligibility 20s
+      // after mount, regardless of progress/fonts state.
+      doneAt = resolveDoneAt(doneAt, mountAt, now)
+      if (isArmed(doneAt, now, DWELL_MS)) {
         setArmed(true)
         return
       }
@@ -128,11 +384,7 @@ export function Loader({
       </div>
 
       <div style={{ textAlign: 'center' }}>
-        <DecodeText
-          text={LOADER_COPY.title}
-          className="loader-title"
-          delay={0.2}
-        />
+        <LoaderTitle text={LOADER_COPY.title} tlRef={titleTlRef} />
         <div
           style={{
             margin: 'var(--s-5) auto 0',
@@ -154,18 +406,7 @@ export function Loader({
             }}
           />
         </div>
-        <div
-          aria-live="polite"
-          style={{
-            marginTop: 'var(--s-4)',
-            fontSize: 'var(--t-xs)',
-            letterSpacing: '0.12em',
-            color: 'var(--bone-2)',
-            textTransform: 'uppercase',
-          }}
-        >
-          {LOADER_COPY.status}
-        </div>
+        <LoaderStatus text={LOADER_COPY.status} active={!leaving} />
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'center' }}>

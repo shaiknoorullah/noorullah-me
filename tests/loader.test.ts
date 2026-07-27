@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isArmed, loadProgress } from '../lib/loader'
+import { isArmed, loadProgress, resolveDoneAt } from '../lib/loader'
 
 describe('loadProgress (ATEN7-P1 ×1.05)', () => {
   it('scales by 1.05 and clamps to 1', () => {
@@ -23,5 +23,25 @@ describe('isArmed — the forced dwell (SPEC §5.3)', () => {
 
   it('never arms before load completes', () => {
     expect(isArmed(null, 60_000)).toBe(false)
+  })
+})
+
+describe('resolveDoneAt — stall ceiling (P5 review, Fix 3)', () => {
+  it('leaves an already-set doneAt untouched', () => {
+    expect(resolveDoneAt(5_000, 0, 999_999)).toBe(5_000)
+  })
+
+  it('stays null before the 20s ceiling elapses', () => {
+    expect(resolveDoneAt(null, 0, 19_999)).toBe(null)
+  })
+
+  it('forces doneAt to mount + ceiling once the ceiling is reached', () => {
+    expect(resolveDoneAt(null, 0, 20_000)).toBe(20_000)
+    expect(resolveDoneAt(null, 1_000, 21_500)).toBe(21_000)
+  })
+
+  it('honors a custom ceiling override', () => {
+    expect(resolveDoneAt(null, 0, 4_999, 5_000)).toBe(null)
+    expect(resolveDoneAt(null, 0, 5_000, 5_000)).toBe(5_000)
   })
 })
