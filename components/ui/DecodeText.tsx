@@ -121,6 +121,10 @@ export function DecodeText({
           key={i}
           data-ch
           aria-hidden="true"
+          // REDUCED is client-only — SSR renders opacity 0, a reduced-
+          // motion client renders 1 (P5 review: benign, silence the
+          // recoverable hydration mismatch; the effect owns the DOM)
+          suppressHydrationWarning
           style={{ opacity: REDUCED ? 1 : 0 }}
         >
           {c}

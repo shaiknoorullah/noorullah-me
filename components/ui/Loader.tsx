@@ -149,6 +149,10 @@ function LoaderTitle({
           key={i}
           data-ch
           aria-hidden="true"
+          // REDUCED/E2E are client-only signals — SSR renders opacity 0,
+          // a reduced-motion client renders 1 (P5 review: benign, silence
+          // the recoverable hydration mismatch; the effect owns the DOM)
+          suppressHydrationWarning
           style={{ opacity: E2E || REDUCED ? 1 : 0 }}
         >
           {c}
@@ -329,6 +333,9 @@ export function Loader({
       // after mount, regardless of progress/fonts state.
       doneAt = resolveDoneAt(doneAt, mountAt, now)
       if (isArmed(doneAt, now, DWELL_MS)) {
+        // arming always shows the title resolved — covers the stall-ceiling
+        // path where the progress scrub froze mid-decode (P5 review)
+        titleTlRef.current?.progress(1)
         setArmed(true)
         return
       }
@@ -350,6 +357,9 @@ export function Loader({
     if (veil) {
       veil.style.transition = 'opacity 1s linear'
       veil.style.opacity = '0'
+      // the fading veil must not swallow clicks on the revealed page
+      // (P5 integration review: 1s pointer dead-zone)
+      veil.style.pointerEvents = 'none'
     }
     setTimeout(() => setGone(true), 1050)
   }, [armed, leaving, onEnter])

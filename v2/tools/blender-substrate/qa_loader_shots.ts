@@ -1,5 +1,9 @@
 /* P5 evidence: loader boot sequence (cold load → mid-decode → armed →
    handoff) + DecodeText mid-flight still (via the /decode-probe dev page).
+   NOTE: /decode-probe is TRANSIENT scaffolding — create app/decode-probe/
+   page.tsx mounting one <DecodeText> below the fold before the run, delete
+   it after (it is never committed: an untracked app/ page also flips
+   unrelated biome rule application — see the P5 ledger).
    Captures land in v2/tools/blender-substrate/qa/loader/. */
 import { chromium, type Page } from '@playwright/test'
 import { mkdirSync, writeFileSync } from 'node:fs'
