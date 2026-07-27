@@ -114,6 +114,22 @@ async function run(gpu: boolean): Promise<boolean> {
     if (!ready) await page.waitForTimeout(1000)
   }
   console.log(`SCENE READY: ${ready}`)
+  // click through the loader (P5 director ruling: the intro dolly is
+  // entry-gated — QA must enter before shooting)
+  try {
+    await page.waitForFunction(
+      () => {
+        const b = document.querySelector('button')
+        return b && !b.disabled
+      },
+      { timeout: 30000 }
+    )
+    await page.locator('button:not([disabled])').first().click()
+    await page.waitForTimeout(7500) // veil drop (1s) + intro dolly (6s)
+    console.log('ENTERED (veil dropped, intro dolly played)')
+  } catch {
+    console.log('!! loader enter not available — shooting anyway')
+  }
 
   for (const [name, section] of ACT_SHOTS) {
     await page.evaluate((id) => {

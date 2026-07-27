@@ -17,6 +17,7 @@ import {
   SOCKET_POS_DIE,
   SURFACE_Y,
 } from './anchors.generated'
+import { sessionState } from './store'
 
 export type ShotAnchor =
   | ['sec', string]
@@ -525,10 +526,15 @@ export class Director {
         ? clamp01((p - riseStart.p) / (riseEnd.p - riseStart.p))
         : 0
 
-    // ACT 0 intro: slow 6s dolly-in (SPEC §4: 6s then breathing drift)
+    // ACT 0 intro: slow 6s dolly-in (SPEC §4: 6s then breathing drift).
+    // Entry-gated (P5 director ruling): the film's first move begins at
+    // the loader reveal, never behind the veil — the dolly timer only
+    // advances once CLICK TO ENTER has fired.
     const shotPos = new THREE.Vector3(...s.pos)
     if (this.introT < 1) {
-      this.introT = Math.min(1, this.introT + dt / 6)
+      if (sessionState.entered) {
+        this.introT = Math.min(1, this.introT + dt / 6)
+      }
       const k = 1 - easeIO(this.introT)
       shotPos.z += k * 1.6
       shotPos.y += k * 0.3
