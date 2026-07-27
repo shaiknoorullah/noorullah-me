@@ -3,6 +3,7 @@ import {
   buildWindows,
   charPhaseAt,
   DECODE_DEFAULTS,
+  decodeDuration,
   SCRAMBLE_GLYPHS,
   scrambleGlyph,
 } from '../lib/decode'
@@ -20,17 +21,30 @@ describe('buildWindows', () => {
     }
   })
 
-  it('randomizes resolve order (Fisher-Yates), covering every index', () => {
-    let call = 0
-    const seq = [0.9, 0.1, 0.7, 0.3, 0.5, 0.2, 0.8, 0.4, 0.6, 0.0]
-    const ws = buildWindows(
-      10,
-      DECODE_DEFAULTS,
-      () => seq[call++ % seq.length]!
+  it('randomizes resolve order (Fisher-Yates), covering every index once, not the identity wipe', () => {
+    const ws = buildWindows(10, DECODE_DEFAULTS, rand)
+    const starts = ws.map((w) => w.start)
+
+    // (a) every slot index 0..9 is used exactly once: sorted starts must
+    // equal the 10 expected per-slot start times, none skipped or repeated.
+    const span = 10 * DECODE_DEFAULTS.stagger + DECODE_DEFAULTS.duration
+    const factor =
+      DECODE_DEFAULTS.randMin +
+      (DECODE_DEFAULTS.randMax - DECODE_DEFAULTS.randMin) * 0.5
+    const expectedSorted = Array.from(
+      { length: 10 },
+      (_, slot) => ((slot * DECODE_DEFAULTS.stagger) / span) * factor
     )
-    const starts = ws.map((w) => w.start).sort((a, b) => a - b)
-    // distinct staggered starts — not a left-to-right wipe
-    expect(new Set(starts).size).toBeGreaterThan(5)
+    const sortedStarts = [...starts].sort((a, b) => a - b)
+    expect(sortedStarts).toEqual(expectedSorted)
+
+    // (b) the resolve order (as returned, char-index order) is NOT the
+    // identity left-to-right wipe — starts must not be monotonically
+    // increasing.
+    const isMonotonicIncreasing = starts.every(
+      (s, i) => i === 0 || s >= starts[i - 1]!
+    )
+    expect(isMonotonicIncreasing).toBe(false)
   })
 })
 
@@ -42,6 +56,14 @@ describe('charPhaseAt', () => {
     expect(charPhaseAt(0.3, win)).toBe('scramble')
     expect(charPhaseAt(0.55, win)).toBe('flash')
     expect(charPhaseAt(0.7, win)).toBe('settled')
+  })
+})
+
+describe('decodeDuration', () => {
+  it('pins the ≤1.2s settle clamp (SPEC §8)', () => {
+    expect(decodeDuration(10)).toBe(0.5)
+    expect(decodeDuration(45)).toBe(1.2)
+    expect(decodeDuration(200)).toBe(1.2)
   })
 })
 

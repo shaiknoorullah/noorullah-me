@@ -13,6 +13,7 @@ import {
   buildWindows,
   charPhaseAt,
   DECODE_DEFAULTS,
+  decodeDuration,
   scrambleGlyph,
 } from '../../lib/decode'
 import { REDUCED } from '../../lib/scene/store'
@@ -90,7 +91,7 @@ export function DecodeText({
 
     const tween = gsap.to(state, {
       t: 1,
-      duration: Math.min(1.2, chars.length * 0.02 + 0.3),
+      duration: decodeDuration(chars.length),
       ease: 'none',
       delay,
       paused: true,
@@ -102,7 +103,6 @@ export function DecodeText({
       once: true,
       onEnter: () => tween.play(),
     })
-    apply()
     return () => {
       st.kill()
       tween.kill()

@@ -50,6 +50,12 @@ export function buildWindows(
   })
 }
 
+/* Total settle time for a heading of `len` chars, clamped so no heading
+   ever takes longer than 1.2s to resolve (SPEC §8 readability gate). */
+export function decodeDuration(len: number): number {
+  return Math.min(1.2, len * 0.02 + 0.3)
+}
+
 export type CharPhase = 'hidden' | 'scramble' | 'flash' | 'settled'
 
 /* The flash is the last 15% of the window: the resolving glyph flashes
