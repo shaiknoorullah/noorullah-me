@@ -43,11 +43,13 @@ async function newSession(): Promise<{ browser: Browser; page: Page }> {
   page.on('console', (m) => {
     if (m.type() === 'error') console.log(`${ts()} console.error: ${m.text()}`)
   })
+  // 'load' not 'networkidle': the full landing DOM + island keeps the
+  // network from idling under host contention (observed twice)
   await page.goto('http://localhost:3000/?tier=high', {
-    waitUntil: 'networkidle',
-    timeout: 60000,
+    waitUntil: 'load',
+    timeout: 90000,
   })
-  await page.waitForTimeout(6000)
+  await page.waitForTimeout(8000)
   await page.evaluate((sections) => {
     const spacer = document.createElement('div')
     spacer.style.cssText = 'position:relative;width:100%;pointer-events:none'
