@@ -8,10 +8,12 @@
    mid/high (256²), 16,384 low (128²), hidden on failsafe.
 
    Adaptation from the task-15 brief (same as DustField's task-12 note):
-   the brief gates the sim on `tier === 'failsafe'`, but this app's
-   QualityTier is only 'high' | 'mid' | 'low' (TS2367 literal-overlap
-   error) — failsafe means the canvas never mounts (SceneIsland), so
-   REDUCED alone is the correct skip gate here. */
+   the brief gates the sim on `tier === 'failsafe'`, but at the time this
+   file was written this app's QualityTier was only 'high' | 'mid' | 'low'
+   (TS2367 literal-overlap error), so REDUCED alone stood in as the skip
+   gate. Task 22 extended QualityTier to include 'failsafe' (DESIGN
+   §11.3/SPEC §7) and closed this gap — the sim is now skipped on failsafe
+   too, restoring the brief's original intent. */
 
 import { useGLTF } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
@@ -71,7 +73,7 @@ export function TransitionParticles({ director }: { director: Director }) {
   const COUNT = SIZE * SIZE
 
   const sim = useMemo(() => {
-    if (REDUCED) return null
+    if (REDUCED || tier === 'failsafe') return null
     const gpu = new GPUComputationRenderer(SIZE, SIZE, gl)
     const posTex = gpu.createTexture()
     const velTex = gpu.createTexture()

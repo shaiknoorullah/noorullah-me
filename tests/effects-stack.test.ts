@@ -40,7 +40,7 @@ describe('post stack order (SPEC §5.7)', () => {
     expect(src).toContain('GodRaysEffect')
   })
 
-  it('reduced motion renders AgX only', () => {
-    expect(src).toContain('if (REDUCED)')
+  it('reduced motion (and failsafe, Task 22) renders AgX only', () => {
+    expect(src).toMatch(/if \(REDUCED \|\| quality\.tier === 'failsafe'\)/)
   })
 })

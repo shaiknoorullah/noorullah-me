@@ -85,7 +85,7 @@ import {
   STUDIO_HDR_URL,
   SUBSTRATE_GLB_URL,
 } from '../../lib/scene/rig'
-import { REDUCED } from '../../lib/scene/store'
+import { quality, REDUCED } from '../../lib/scene/store'
 
 /* point on a polyline at parameter t 0..1 (arc-length-ish by segment) */
 function lanePoint(
@@ -112,6 +112,12 @@ export function SubstrateSet({
 }) {
   const gl = useThree((s) => s.gl)
   const scene = useThree((s) => s.scene)
+  // failsafe (Task 22, DESIGN §11.3/SPEC §7): the bottom rung of the
+  // degradation ladder. Unlit MeshBasicMaterial off the courier's own
+  // albedo/AO maps, no pulse shader, no shadow casters/receivers, no rig
+  // lights (JSX below) — Effects.tsx already renders AgX-only for this
+  // tier and TransitionParticles/DustField fold it into their low-tier gate.
+  const failsafe = quality.tier === 'failsafe'
   const gltf = useGLTF(SUBSTRATE_GLB_URL, false, false, (loader) => {
     loader.setMeshoptDecoder(MeshoptDecoder)
     const ktx2 = new KTX2Loader()
@@ -155,58 +161,74 @@ export function SubstrateSet({
     gltf.scene.traverse((o) => {
       if (!(o instanceof THREE.Mesh)) return
       const src = o.material as THREE.MeshStandardMaterial
+      // failsafe: unlit MeshBasicMaterial off the courier's own albedo (map)
+      // + AO (aoMap) — no PBR override, no pulse shader, no shadows.
+      const basic = () =>
+        new THREE.MeshBasicMaterial({
+          map: src.map ?? null,
+          aoMap: src.aoMap ?? null,
+          color: 0xffffff,
+        })
       switch (src.name) {
         case 'mt_floor':
-          o.material = mats.floor
-          o.receiveShadow = true
+          o.material = failsafe ? basic() : mats.floor
+          o.receiveShadow = !failsafe
           fadeMats.current.push(o.material)
           boardObjs.current.push(o)
           break
         case 'mt_granite':
-          o.material = mats.granite
-          o.castShadow = true
-          o.receiveShadow = true
+          o.material = failsafe ? basic() : mats.granite
+          o.castShadow = !failsafe
+          o.receiveShadow = !failsafe
           fadeMats.current.push(o.material)
           boardObjs.current.push(o)
           break
         case 'mt_ihs':
-          o.material = mats.ihs
-          o.castShadow = true
+          o.material = failsafe ? basic() : mats.ihs
+          o.castShadow = !failsafe
           break
         case 'mt_solder_traced': {
-          const m = mats.solder.clone()
-          if (src.aoMap) m.aoMap = src.aoMap
-          if (src.emissiveMap) {
-            o.userData.traceMask = src.emissiveMap
-            // SPEC §5.1: the pulse system keys strictly on the per-mesh
-            // courier (plan self-review note 10)
-            pulseHandles.current.push(applyTracePulse(m, src.emissiveMap))
+          if (failsafe) {
+            o.material = basic()
+          } else {
+            const m = mats.solder.clone()
+            if (src.aoMap) m.aoMap = src.aoMap
+            if (src.emissiveMap) {
+              o.userData.traceMask = src.emissiveMap
+              // SPEC §5.1: the pulse system keys strictly on the per-mesh
+              // courier (plan self-review note 10)
+              pulseHandles.current.push(applyTracePulse(m, src.emissiveMap))
+            }
+            o.material = m
           }
-          o.material = m
-          o.castShadow = true
-          o.receiveShadow = true
-          fadeMats.current.push(m)
+          o.castShadow = !failsafe
+          o.receiveShadow = !failsafe
+          fadeMats.current.push(o.material)
           boardObjs.current.push(o)
           break
         }
         case 'mt_gold':
-          o.material = mats.gold
-          o.castShadow = true
+          o.material = failsafe ? basic() : mats.gold
+          o.castShadow = !failsafe
           fadeMats.current.push(o.material)
           boardObjs.current.push(o)
           break
         case 'mt_component':
         case 'mt_darkmetal': {
-          const m = src.aoMap ? mats.component.clone() : mats.component
-          if (src.aoMap) m.aoMap = src.aoMap
-          o.material = m
-          o.castShadow = true
-          fadeMats.current.push(m)
+          if (failsafe) {
+            o.material = basic()
+          } else {
+            const m = src.aoMap ? mats.component.clone() : mats.component
+            if (src.aoMap) m.aoMap = src.aoMap
+            o.material = m
+          }
+          o.castShadow = !failsafe
+          fadeMats.current.push(o.material)
           boardObjs.current.push(o)
           break
         }
         case 'mt_die':
-          o.material = mats.die
+          o.material = failsafe ? basic() : mats.die
           break
         default:
           break
@@ -222,14 +244,17 @@ export function SubstrateSet({
     // update now — after every mesh's material and shadow flags are final —
     // bakes the correct, final shadow map exactly once; WebGLShadowMap
     // resets needsUpdate to false immediately after that single render.
-    gl.shadowMap.needsUpdate = true
+    // Skipped entirely on failsafe: no mesh casts/receives there and no
+    // lights are mounted (JSX below), so the bake would be pure waste on
+    // hardware too weak to afford it.
+    if (!failsafe) gl.shadowMap.needsUpdate = true
 
     const handles = pulseHandles.current
     return () => {
       for (const h of handles) h.dispose()
       handles.length = 0
     }
-  }, [gltf, mats, gl])
+  }, [gltf, mats, gl, failsafe])
 
   /* The pulse-head: a small emissive sphere riding lane 0 — the GodRays sun
      and the spill light's mount. */
@@ -309,11 +334,13 @@ export function SubstrateSet({
     })
   }, [])
 
-  /* Light targets must live in the scene graph. */
+  /* Light targets must live in the scene graph. Skipped entirely on
+     failsafe: the rig (JSX below) doesn't mount, so the refs stay null. */
   const key = useRef<THREE.SpotLight>(null!)
   const fill = useRef<THREE.SpotLight>(null!)
   const rim = useRef<THREE.SpotLight>(null!)
   useEffect(() => {
+    if (failsafe) return
     const k = key.current
     const f = fill.current
     const r = rim.current
@@ -324,7 +351,7 @@ export function SubstrateSet({
     return () => {
       scene.remove(k.target, f.target, r.target)
     }
-  }, [scene])
+  }, [scene, failsafe])
 
   useFrame((st) => {
     const t = REDUCED ? 0 : st.clock.elapsedTime
@@ -369,40 +396,44 @@ export function SubstrateSet({
 
   return (
     <group>
-      {/* key: 5600K softbox, camera-left, low — long component shadows */}
-      <spotLight
-        ref={key}
-        position={KEY_POS.toArray()}
-        color={KEY_COLOR}
-        intensity={180}
-        angle={0.55}
-        penumbra={0.6}
-        decay={2}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-bias={-0.0003}
-      />
-      {/* fill: ionic-tinted cool ~15%, lifts floors, never to gray */}
-      <spotLight
-        ref={fill}
-        position={FILL_POS.toArray()}
-        color={FILL_COLOR}
-        intensity={30}
-        angle={0.7}
-        penumbra={0.9}
-        decay={2}
-      />
-      {/* rim: ember from behind the skyline — separates the relief */}
-      <spotLight
-        ref={rim}
-        position={RIM_POS.toArray()}
-        color={RIM_COLOR}
-        intensity={50}
-        angle={0.38}
-        penumbra={1}
-        decay={2}
-      />
-      <hemisphereLight args={[0x0a0a0c, 0x000000, 0.2]} />
+      {!failsafe && (
+        <>
+          {/* key: 5600K softbox, camera-left, low — long component shadows */}
+          <spotLight
+            ref={key}
+            position={KEY_POS.toArray()}
+            color={KEY_COLOR}
+            intensity={180}
+            angle={0.55}
+            penumbra={0.6}
+            decay={2}
+            castShadow
+            shadow-mapSize={[2048, 2048]}
+            shadow-bias={-0.0003}
+          />
+          {/* fill: ionic-tinted cool ~15%, lifts floors, never to gray */}
+          <spotLight
+            ref={fill}
+            position={FILL_POS.toArray()}
+            color={FILL_COLOR}
+            intensity={30}
+            angle={0.7}
+            penumbra={0.9}
+            decay={2}
+          />
+          {/* rim: ember from behind the skyline — separates the relief */}
+          <spotLight
+            ref={rim}
+            position={RIM_POS.toArray()}
+            color={RIM_COLOR}
+            intensity={50}
+            angle={0.38}
+            penumbra={1}
+            decay={2}
+          />
+          <hemisphereLight args={[0x0a0a0c, 0x000000, 0.2]} />
+        </>
+      )}
 
       <primitive object={gltf.scene} />
       {fogCards.map((m) => (

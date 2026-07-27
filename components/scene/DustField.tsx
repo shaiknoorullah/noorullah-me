@@ -9,11 +9,13 @@
 
    Adaptations from the task-12 brief (documented per task instructions):
    1. The brief's `low` check was `quality.tier === 'low' || quality.tier
-      === 'failsafe'`. This app's QualityTier (lib/scene/quality.ts) is
-      only 'high' | 'mid' | 'low' — there is no 'failsafe' tier here, so
-      that branch is a strict-TS literal-overlap error (TS2367). Dropped
-      the 'failsafe' arm; 'low' alone is the correct low-tier gate for
-      this codebase.
+      === 'failsafe'`. At the time this file was written, this app's
+      QualityTier (lib/scene/quality.ts) was only 'high' | 'mid' | 'low' —
+      there was no 'failsafe' tier, so that branch was a strict-TS
+      literal-overlap error (TS2367), and the 'failsafe' arm was dropped.
+      Task 22 extended QualityTier to include 'failsafe' (the degradation
+      ladder's bottom rung, DESIGN §11.3/SPEC §7) and closed this gap —
+      the brief's original `'low' || 'failsafe'` gate is restored below.
    2. The brief keyed each stratum's <points> on its array index
       (`key={i}`), which biome's lint/suspicious/noArrayIndexKey flags as
       an error under this repo's lint config. Keyed on `s.geo.uuid`
@@ -268,7 +270,7 @@ function buildStratum(cfg: StratumCfg) {
 export function DustField() {
   const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera
   const gl = useThree((s) => s.gl)
-  const low = quality.tier === 'low'
+  const low = quality.tier === 'low' || quality.tier === 'failsafe'
 
   const strata = useMemo(() => dustStrata(low).map(buildStratum), [low])
 

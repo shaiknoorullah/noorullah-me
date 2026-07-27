@@ -198,7 +198,10 @@ export function Effects({
     }
   })
 
-  if (REDUCED) {
+  // failsafe (Task 22): the board renders unlit MeshBasicMaterial (no
+  // lights, no shadows — SubstrateSet.tsx); give it the same AgX-only floor
+  // REDUCED already gets rather than a distinct (and no leaner) path.
+  if (REDUCED || quality.tier === 'failsafe') {
     return (
       <EffectComposer multisampling={0}>
         <primitive object={tone} dispose={null} />

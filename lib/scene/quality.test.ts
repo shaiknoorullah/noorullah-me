@@ -103,6 +103,44 @@ describe('resolveTier', () => {
       })
     ).toBe('low')
   })
+
+  it('forced "failsafe" wins over everything else', () => {
+    expect(resolveTier({ ...baseEnv, forcedTier: 'failsafe' })).toBe('failsafe')
+  })
+
+  it('webglAvailable: false returns "failsafe" regardless of other signals', () => {
+    expect(
+      resolveTier({ ...baseEnv, webglAvailable: false, deviceMemory: 8 })
+    ).toBe('failsafe')
+  })
+
+  it('omitted webglAvailable defaults to true (unaffected callers stay as before)', () => {
+    expect(resolveTier(baseEnv)).toBe('high')
+  })
+
+  it('catastrophic maxTextureSize (< 2048) returns "failsafe"', () => {
+    expect(
+      resolveTier({ ...baseEnv, webglAvailable: true, maxTextureSize: 1024 })
+    ).toBe('failsafe')
+  })
+
+  it('maxTextureSize at or above 2048 does not trigger failsafe', () => {
+    expect(
+      resolveTier({ ...baseEnv, webglAvailable: true, maxTextureSize: 2048 })
+    ).toBe('high')
+  })
+
+  it('failsafe gate beats the low-tier hardware heuristics', () => {
+    expect(
+      resolveTier({
+        ...baseEnv,
+        webglAvailable: false,
+        coarsePointer: false,
+        deviceMemory: 16,
+        hardwareConcurrency: 16,
+      })
+    ).toBe('failsafe')
+  })
 })
 
 describe('detectTier', () => {

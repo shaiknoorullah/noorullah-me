@@ -32,6 +32,7 @@ export default function SceneRoot(): JSX.Element {
   const director = useMemo(() => new Director(REDUCED), [])
   const [ready, setReady] = useState(false)
   const [sun, setSun] = useState<THREE.Mesh | null>(null)
+  const [paused, setPaused] = useState(false)
 
   useEffect(() => {
     quality.tier = detectTier()
@@ -109,6 +110,10 @@ export default function SceneRoot(): JSX.Element {
     }
     addEventListener('pointermove', onPointer)
 
+    /* tab-hide: freeze the frame loop (audio pauses itself, Task 18) */
+    const onVis = () => setPaused(document.hidden)
+    document.addEventListener('visibilitychange', onVis)
+
     // QA/debug handle (harmless in production)
     ;(window as unknown as { __dir?: Director }).__dir = director
 
@@ -118,6 +123,7 @@ export default function SceneRoot(): JSX.Element {
       removeEventListener('resize', rebuild)
       ScrollTrigger.removeEventListener('refresh', rebuild)
       removeEventListener('pointermove', onPointer)
+      document.removeEventListener('visibilitychange', onVis)
       THREE.DefaultLoadingManager.onProgress = () => {
         /* released: island unmounted */
       }
@@ -129,7 +135,9 @@ export default function SceneRoot(): JSX.Element {
     }
   }, [director])
 
-  const low = quality.tier === 'low'
+  // 'failsafe' folds into the same lowest-DPR/no-post floor as 'low' (Task
+  // 22: the degradation ladder's bottom rung, DESIGN §11.3/SPEC §7).
+  const low = quality.tier === 'low' || quality.tier === 'failsafe'
 
   return (
     <Canvas
@@ -139,6 +147,7 @@ export default function SceneRoot(): JSX.Element {
         toneMapping: THREE.NoToneMapping,
       }}
       dpr={low ? [1, 1] : [1, 1.75]}
+      frameloop={paused ? 'never' : 'always'}
       camera={{ fov: 20, near: 0.1, far: 140, position: [8.2, 2.4, 7.4] }}
       onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace
