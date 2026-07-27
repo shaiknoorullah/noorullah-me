@@ -84,7 +84,12 @@ export class AudioEngine {
         /* defensive only — Chrome auto-resumes contexts created in a gesture (aten7) */
       })
 
-    // bed fades in over 3s; SFX load lazily, failures stay silent
+    // the first sound you hear is the enter click — fired BEFORE the bed
+    // decode await so it lands with the gesture (a ~6KB tick decodes in
+    // ms; the 90s bed takes over a second on slower CPUs)
+    this.playSfx('click')
+
+    // bed fades in over ~3s; SFX load lazily, failures stay silent
     const bed = await this.load(BED_URL).catch(() => null)
     if (bed && this.ctx === ctx) {
       const src = ctx.createBufferSource()
@@ -94,7 +99,6 @@ export class AudioEngine {
       src.start()
       this.bedGain.gain.setTargetAtTime(BED_GAIN, ctx.currentTime, 1.0)
     }
-    this.playSfx('click') // the first sound you hear is the enter click
 
     document.addEventListener('visibilitychange', this.onVisibility)
   }

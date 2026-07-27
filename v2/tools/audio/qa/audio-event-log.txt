@@ -1,0 +1,40 @@
+P6 EVIDENCE — scripted audio session (v2/tools/audio/qa_audio_log.ts)
+Date: 2026-07-28 · headless Chromium, --autoplay-policy=user-gesture-required
+Engine: lib/audio.ts singleton via window.__audio (Task 20 wires real consumers)
+
+ENGINE UNLOCKED: true
+
+MUFFLE SWEEP (muffle(true), sampled 1Hz over the 6s window):
+  t+0s: freq=22050Hz bedGain=0.800
+  t+1s: freq=5368Hz  bedGain=0.418
+  t+2s: freq=1378Hz  bedGain=0.327
+  t+3s: freq=437Hz   bedGain=0.305
+  t+4s: freq=251Hz   bedGain=0.301
+  t+5s: freq=200Hz   bedGain=0.300
+  t+6s: freq=200Hz   bedGain=0.300
+  → lowpass 22050→200Hz and volume 0.8→0.3, expo.out shape (SPEC §5.6)
+
+AUDIO EVENT LOG (Web Audio instrumented pre-load via addInitScript):
+  9.603s   == CLICKING ENTER now ==            (marker precedes the click round-trip)
+  14.271s  AudioContext constructed (state=running)   ← in-gesture; Chrome auto-resume, no explicit resume (aten7)
+  14.684s  context state -> running
+  15.525s  source.start (loop=false dur=0.631s)       ← first SFX: the enter click (623ms grammar), BEFORE the bed decode
+  15.986s  source.start (loop=true  dur=90.014s)      ← the 90s bed, seamless loop
+  30.149s  source.start (loop=false dur=0.129s)       ← playSfx('leave')  — 125ms grammar
+  31.005s  source.start (loop=false dur=0.361s)       ← playSfx('enter')  — 359ms grammar
+  32.274s  source.start (loop=false dur=0.477s)       ← playSfx('arm')    — 458ms grammar
+  33.542s  source.start (loop=false dur=0.872s)       ← playSfx('decode') — 870ms grammar
+  (setAct(1) fired after — bed dip-and-return is gain automation, not a source start)
+
+SILENCE BEFORE GESTURE: no AudioContext exists until the click (the log's
+first audio event is the in-gesture construction). REDUCED ⇒ unlock no-ops.
+
+ASSET BUDGET (public/audio/, all original synthesized — provenance
+v2/tools/audio/gen_audio.sh):
+  bed-90s.ogg     285,736 B  (90.000s seamless loop)
+  sfx-leave.ogg     4,101 B  (125ms)
+  sfx-enter.ogg     4,748 B  (359ms)
+  sfx-arm.ogg       5,056 B  (458ms)
+  sfx-click.ogg     6,019 B  (623ms)
+  sfx-decode.ogg    5,784 B  (870ms)
+  TOTAL           311,444 B  of 4,000,000 B budget (7.8%)
