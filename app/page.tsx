@@ -7,12 +7,12 @@
 //   §4   — a11y gate (axe-core 0 critical, 0 serious).
 //
 // Notes:
-//   - `<StageLoader>` mounts the R3F canvas island (Phase 0 proof-of-pipeline:
-//     black background + wireframe cube) `position: fixed`, `zIndex: -1`,
-//     behind this div. The `<body>` (app/layout.tsx) already paints
-//     `var(--ink-0)`, so this div's own background is `transparent` — the
-//     canvas would otherwise be hidden behind it. Real scene composition
-//     lands in later Phase 0 tasks.
+//   - `<SceneIsland>` mounts the R3F canvas island (SceneRoot: Lenis/tempus
+//     scroll, Director, post-processing skeleton) `position: fixed`,
+//     `zIndex: -1`, behind this div. The `<body>` (app/layout.tsx) already
+//     paints `var(--ink-0)`, so this div's own background is `transparent` —
+//     the canvas would otherwise be hidden behind it. The set (glTF scene)
+//     lands in a later task.
 //   - The wordmark svg is decorative (`aria-hidden`); the accessible name is
 //     supplied by a visually-hidden `<h1>` so the route still has a single
 //     top-level heading per WCAG / axe `heading-order`.
@@ -21,7 +21,7 @@
 
 import type { JSX } from 'react'
 import { Logo } from '../components/primitives/Logo'
-import { StageLoader } from '../components/scene/StageLoader'
+import { SceneIsland } from '../components/scene/SceneIsland'
 import { BIO_30W, STATUS_BUILDING, STATUS_LOCATION } from '../lib/bio'
 
 export default function HomePage(): JSX.Element {
@@ -38,7 +38,7 @@ export default function HomePage(): JSX.Element {
         background: 'transparent',
       }}
     >
-      <StageLoader />
+      <SceneIsland />
 
       <main
         style={{

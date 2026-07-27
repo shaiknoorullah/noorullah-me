@@ -1,6 +1,6 @@
 'use client'
 
-// StageLoader — client-only wrapper around Stage.
+// SceneIsland — client-only wrapper around SceneRoot.
 //
 // app/page.tsx is a Server Component, and Next 16 forbids
 // `dynamic(..., { ssr: false })` inside one, so the ssr:false dynamic
@@ -9,8 +9,8 @@
 import dynamic from 'next/dynamic'
 import type { JSX } from 'react'
 
-const Stage = dynamic(() => import('./Stage'), { ssr: false })
+const SceneRoot = dynamic(() => import('./SceneRoot'), { ssr: false })
 
-export function StageLoader(): JSX.Element {
-  return <Stage />
+export function SceneIsland(): JSX.Element {
+  return <SceneRoot />
 }
