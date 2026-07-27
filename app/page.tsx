@@ -23,7 +23,7 @@ import { LoaderMount } from '../components/ui/LoaderMount'
 
 export default function HomePage(): JSX.Element {
   return (
-    <div style={{ background: 'var(--ink-0)', color: 'var(--bone-0)' }}>
+    <div style={{ background: 'transparent', color: 'var(--bone-0)' }}>
       <LoaderMount />
       <SceneIsland />
       <LandingSections />

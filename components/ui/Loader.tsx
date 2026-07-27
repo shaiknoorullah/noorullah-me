@@ -24,6 +24,7 @@
 
 import gsap from 'gsap'
 import {
+  type CSSProperties,
   type JSX,
   useCallback,
   useEffect,
@@ -54,12 +55,26 @@ const E2E =
 // ambient `gsap.core` type namespace — safe under an ES default import.
 type GsapTimeline = ReturnType<typeof gsap.timeline>
 
-// Capitalized so JSX resolves it at runtime rather than as a literal
-// intrinsic tag — same `Tag` device DecodeText.tsx uses so its per-char
-// aria-hidden spans can sit under one aria-label on the container without
-// tripping the generic-role aria-label lint (a plain `<div aria-label>`
-// isn't allowed by role, but the linter can't see through a dynamic tag).
+// A plain `<div>` has no ARIA role of its own — it computes to role
+// `generic`, and `aria-label`/`aria-labelledby` are prohibited on that role
+// (WAI-ARIA §5.2.7; axe-core: `aria-prohibited-attr`). The per-char spans
+// below must stay individually `aria-hidden` (each one mutates its glyph
+// every frame, which is unreadable to a screen reader), so the accessible
+// name has to live on a real, static, visually-hidden text node inside the
+// container instead of an `aria-label` on the container itself.
 const Div = 'div'
+
+const srOnly: CSSProperties = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: 'hidden',
+  clip: 'rect(0,0,0,0)',
+  whiteSpace: 'nowrap',
+  borderWidth: 0,
+}
 
 /* Progress-scrubbed title decode: per-char spans for LOADER_COPY.title on a
    paused gsap.timeline whose onUpdate applies charPhaseAt per char — the
@@ -142,7 +157,11 @@ function LoaderTitle({
   }, [chars, windows, tlRef])
 
   return (
-    <Div ref={root} className="loader-title" aria-label={text}>
+    <Div ref={root} className="loader-title">
+      {/* real, static accessible name — the per-char spans below mutate
+          every frame and stay aria-hidden (M2 review: aria-label is
+          prohibited on this container's role=generic) */}
+      <span style={srOnly}>{text}</span>
       {chars.map((c, i) => (
         <span
           // biome-ignore lint/suspicious/noArrayIndexKey: chars are static, non-unique, and never reorder — position is a stable identity here (DecodeText precedent)
@@ -246,8 +265,6 @@ function LoaderStatus({
   return (
     <Div
       ref={root}
-      aria-live="polite"
-      aria-label={text}
       style={{
         marginTop: 'var(--s-4)',
         fontSize: 'var(--t-xs)',
@@ -256,6 +273,14 @@ function LoaderStatus({
         textTransform: 'uppercase',
       }}
     >
+      {/* real, static accessible name carries aria-live: the per-char
+          spans below rewrite their glyph every ~2.4s wave and stay
+          aria-hidden, so a live region on the mutating container would
+          both violate role=generic aria-label and announce garbage
+          mid-scramble (M2 review) */}
+      <span aria-live="polite" style={srOnly}>
+        {text}
+      </span>
       {chars.map((c, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: chars are static, non-unique, and never reorder — position is a stable identity here (DecodeText precedent)
         <span key={i} data-ch aria-hidden="true">
