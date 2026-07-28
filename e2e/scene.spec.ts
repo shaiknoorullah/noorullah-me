@@ -31,7 +31,11 @@ test.describe('scene', () => {
   // in master Task 10 (GLB + light rig + fog cards), which restores this
   // pixel-content assertion. Re-enabled by dropping `.fixme` and renaming.
   test('canvas renders the substrate set', async ({ page }) => {
-    await page.goto('/')
+    // force the full pipeline: the CI browser is SwiftShader, which the
+    // tier ladder now routes to failsafe (unlit basics, no trace pulse) —
+    // this spec asserts the HIGH-tier pipeline (pulse green, non-uniform
+    // lighting), so pin the tier like the acts spec and QA scripts do
+    await page.goto('/?tier=high')
 
     const canvas = page.locator('canvas')
     await expect(canvas).toBeVisible({ timeout: 15_000 })

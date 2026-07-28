@@ -33,14 +33,17 @@ const CATASTROPHIC_MAX_TEXTURE_SIZE = 2048
  * Decision table (order matters):
  *
  * 1. forcedTier is exactly 'low'|'mid'|'high'|'failsafe' → return it
- * 2. webglAvailable === false, OR maxTextureSize < 2048 → 'failsafe'
- *    (WebGL context creation failed outright, or catastrophic caps — the
- *    bottom of the degradation ladder, DESIGN §11.3/SPEC §7. Hardware/renderer
- *    heuristics below are meaningless once the GPU can't be trusted at all.)
+ * 2. webglAvailable === false, OR maxTextureSize < 2048, OR the renderer is
+ *    SOFTWARE-EMULATED (/swiftshader|llvmpipe|software/i) → 'failsafe'
+ *    (WebGL context creation failed outright, catastrophic caps, or no real
+ *    GPU behind the context — the bottom of the degradation ladder, DESIGN
+ *    §11.3/SPEC §7. Software GL compiles the full PBR/post pipeline on the
+ *    CPU: measured 35s+ of main-thread block, and Lighthouse's runner
+ *    declared PAGE_HUNG — deploy run 30380367947. 'low' still runs that
+ *    pipeline; only failsafe's unlit path is honest on these clients.)
  * 3. coarsePointer OR (deviceMemory ?? 8) <= 4 OR (hardwareConcurrency ?? 8) <= 4 → 'low'
- * 4. webglRenderer matches /swiftshader|llvmpipe|software/i → 'low'
- * 5. webglRenderer matches /intel(?!.*arc)|uhd|iris/i → 'mid'
- * 6. Otherwise → 'high'
+ * 4. webglRenderer matches /intel(?!.*arc)|uhd|iris/i → 'mid'
+ * 5. Otherwise → 'high'
  */
 export function resolveTier(env: TierEnvironment): QualityTier {
   // Step 1: Check forced tier override.
@@ -53,13 +56,17 @@ export function resolveTier(env: TierEnvironment): QualityTier {
     return env.forcedTier
   }
 
-  // Step 2: failsafe hard gate — WebGL unavailable, or the driver reports
-  // catastrophically small texture caps.
+  // Step 2: failsafe hard gate — WebGL unavailable, catastrophically small
+  // texture caps, or a software-emulated renderer. Software GL (SwiftShader,
+  // llvmpipe) compiles this scene's full shader stack on the CPU — measured
+  // 35s+ main-thread block; Lighthouse's runner declared PAGE_HUNG. Only the
+  // unlit failsafe path is honest on these clients.
   const webglAvailable = env.webglAvailable ?? true
   if (
     !webglAvailable ||
     (env.maxTextureSize !== undefined &&
-      env.maxTextureSize < CATASTROPHIC_MAX_TEXTURE_SIZE)
+      env.maxTextureSize < CATASTROPHIC_MAX_TEXTURE_SIZE) ||
+    /swiftshader|llvmpipe|software/i.test(env.webglRenderer)
   ) {
     return 'failsafe'
   }
@@ -73,17 +80,12 @@ export function resolveTier(env: TierEnvironment): QualityTier {
     return 'low'
   }
 
-  // Step 4: Software renderer → low (slow/emulated GPU).
-  if (/swiftshader|llvmpipe|software/i.test(env.webglRenderer)) {
-    return 'low'
-  }
-
-  // Step 5: Intel integrated or UHD/Iris → mid (adequate for base scene).
+  // Step 4: Intel integrated or UHD/Iris → mid (adequate for base scene).
   if (/intel(?!.*arc)|uhd|iris/i.test(env.webglRenderer)) {
     return 'mid'
   }
 
-  // Step 6: High-end GPU (dedicated, modern mobile, or unknown).
+  // Step 5: High-end GPU (dedicated, modern mobile, or unknown).
   return 'high'
 }
 

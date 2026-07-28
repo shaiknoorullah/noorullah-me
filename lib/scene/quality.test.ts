@@ -48,22 +48,25 @@ describe('resolveTier', () => {
     expect(resolveTier(baseEnv)).toBe('high')
   })
 
-  it('renderer "Google SwiftShader" returns "low"', () => {
+  // software renderers moved low -> failsafe (deploy run 30380367947:
+  // software GL compiles the full pipeline on the CPU — 35s+ main-thread
+  // block, Lighthouse PAGE_HUNG; only the unlit failsafe path is honest)
+  it('renderer "Google SwiftShader" returns "failsafe"', () => {
     expect(
       resolveTier({ ...baseEnv, webglRenderer: 'Google SwiftShader' })
-    ).toBe('low')
+    ).toBe('failsafe')
   })
 
-  it('renderer "llvmpipe (LLVM 15.0.7)" returns "low"', () => {
+  it('renderer "llvmpipe (LLVM 15.0.7)" returns "failsafe"', () => {
     expect(
       resolveTier({ ...baseEnv, webglRenderer: 'llvmpipe (LLVM 15.0.7)' })
-    ).toBe('low')
+    ).toBe('failsafe')
   })
 
-  it('renderer "Software Rasterizer" returns "low"', () => {
+  it('renderer "Software Rasterizer" returns "failsafe"', () => {
     expect(
       resolveTier({ ...baseEnv, webglRenderer: 'Software Rasterizer' })
-    ).toBe('low')
+    ).toBe('failsafe')
   })
 
   it('renderer "Intel(R) UHD Graphics 630" returns "mid"', () => {
